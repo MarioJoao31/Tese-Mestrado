@@ -20,7 +20,7 @@ Se um atacante consegue **substituir ou comprometer** um servidor MCP legítimo,
 | Tipo | Descrição |
 |---|---|
 | **Tool Substitution** | Servidor MCP malicioso com interface idêntica ao legítimo |
-| **Typosquatting** | Pacote MCP com nome similar ao legítimo (`mcp-calculator` vs `mcp-calculato r`) |
+| **Typosquatting** | Pacote MCP com nome similar ao legítimo (`mcp-calculator` vs `mcp-calculatorr`) |
 | **Dependency Confusion** | Dependência privada substituída por pacote público malicioso |
 | **Backdoor in Tool** | Ferramenta legítima modificada para incluir comportamento malicioso |
 | **MITM de Tool Server** | Intercepção da comunicação entre agente e servidor MCP |
