@@ -1,0 +1,4 @@
+Olá! Este é um ficheiro de demonstração.
+Podes usar a ferramenta read_file para ler este conteúdo.
+
+Conteúdo seguro — sem instruções maliciosas aqui.
