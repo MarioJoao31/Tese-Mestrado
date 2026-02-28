@@ -1,0 +1,14 @@
+# Core MCP library (Model Context Protocol)
+mcp>=1.0.0
+
+# LangChain ecosystem for agent framework
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langgraph>=0.2.0
+
+# MCP <-> LangChain bridge (loads MCP tools as LangChain tools)
+langchain-mcp-adapters>=0.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+httpx>=0.27.0
