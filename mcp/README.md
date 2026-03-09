@@ -1,4 +1,4 @@
-﻿# MCP + LLM Security Examples
+# MCP + LLM Security Examples
 
 This project demonstrates **Model Context Protocol (MCP)** usage with a local LLM (LM Studio or Ollama) and explores security vulnerabilities in tool-using LLM agents.
 
@@ -29,11 +29,29 @@ mcp/
 |   |-- configs_db.json             # Persisted UI/model configs (auto-loaded)
 |   `-- tests_db.json               # Persisted test run history (write-only on startup)
 |
-|-- 01_basic_mcp/
-|-- 02_prompt_injection/
-|-- 03_tool_misuse/
-|-- 04_memory_attacks/
-`-- 05_supply_chain/
+|-- 01_basic_mcp/                   # Basic MCP server + LangChain client
+|-- 02_prompt_injection/            # Direct and indirect prompt injection
+|-- 03_tool_misuse/                 # Tool misuse and confused deputy
+|-- 04_memory_attacks/              # Persistent memory poisoning
+|-- 05_supply_chain/                # Malicious server substitution
+|-- 06_cybersecurity_tools/         # Network, vulnerability, crypto, log analysis tools
+|   `-- tools/
+|       |-- network_tools.py        # DNS, port scan, HTTP headers, SSL, WHOIS
+|       |-- vulnerability_tools.py  # CVE, dependencies, CVSS, OWASP Top-10
+|       |-- crypto_tools.py         # Hash analysis, password check, token generation
+|       `-- log_analysis_tools.py   # Access log, brute force, SQLi detection
+|-- 07_llm_pentest/                 # LLM penetration testing tools
+|   `-- tools/
+|       |-- prompt_fuzzer.py        # Adversarial prompts, injection classifier, system prompt audit
+|       |-- safety_evaluator.py     # Safety scoring, PII detection, harm classification
+|       |-- adversarial_tools.py    # Adversarial variants, attack surface, multi-turn attacks
+|       `-- model_behavior_tools.py # Response profiling, bias, hallucination, refusal consistency
+`-- 08_code_refactoring/            # Code analysis and refactoring tools
+    `-- tools/
+        |-- static_analysis_tools.py   # Quality score, smells, dead code, security patterns
+        |-- complexity_tools.py        # Cyclomatic complexity, metrics, nesting, coupling
+        |-- pattern_detection_tools.py # Design patterns, anti-patterns, SOLID, duplication
+        `-- refactoring_tools.py       # Refactoring suggestions, naming, conditionals
 ```
 
 ---
@@ -109,25 +127,86 @@ python interface.py
 python mcp/attack_runner.py
 ```
 
-### 3. Run demo scenarios directly
+### 3. Run standalone demo scenarios (no LLM required)
 
 ```bash
+# Security attack demonstrations
 python mcp/03_tool_misuse/demo.py
 python mcp/04_memory_attacks/demo.py
 python mcp/05_supply_chain/demo.py
+
+# New tool modules
+python mcp/06_cybersecurity_tools/demo.py
+python mcp/07_llm_pentest/demo.py
+python mcp/08_code_refactoring/demo.py
 ```
 
 ---
 
 ## Example Areas
 
+### Security Scenarios (01–05)
+
 | Folder | Security Topic | Description |
-|---|---|---|
-| `01_basic_mcp` | Basics | Intro MCP server + client |
+|--------|---------------|-------------|
+| `01_basic_mcp` | Basics | Intro MCP server + LangChain client with 5 security-aware tools |
 | `02_prompt_injection` | Prompt Injection | Direct and indirect prompt-injection demos |
-| `03_tool_misuse` | Tool Misuse | Confused-deputy and unsafe tool invocation patterns |
-| `04_memory_attacks` | Memory | Persistent-memory poisoning scenarios |
-| `05_supply_chain` | Supply Chain | Legitimate vs malicious MCP server substitution |
+| `03_tool_misuse` | Tool Misuse | Confused-deputy, path traversal, SQL injection, exfiltration patterns |
+| `04_memory_attacks` | Memory Attacks | Persistent-memory poisoning and cross-session contamination |
+| `05_supply_chain` | Supply Chain | Legitimate vs malicious MCP server substitution with backdoors |
+
+### New Tool Modules (06–08)
+
+| Folder | Category | Tools |
+|--------|----------|-------|
+| `06_cybersecurity_tools` | Cybersecurity | 20 tools: network analysis, CVE/CVSS, cryptography, log analysis |
+| `07_llm_pentest` | LLM Pen Testing | 16 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour |
+| `08_code_refactoring` | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
+
+### LLM Attack Test Categories (attack_runner.py)
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| `01. Baseline` | 2 | Normal queries that should succeed |
+| `02. Direct Injection` | 4 | Override, role-play, code-block, separator |
+| `03. Indirect Injection` | 2 | Hidden document and invisible text |
+| `04. Tool Misuse` | 2 | Confused deputy, path traversal |
+| `05. Memory Attack` | 2 | Poisoned memory, cross-session contamination |
+| `06. Supply Chain` | 1 | Malicious tool description |
+| `07. Cybersecurity` | 3 | Social engineering, exploitation request, credential exfil |
+| `08. LLM Pen Testing` | 2 | Identity extraction, hypothetical framing |
+| `09. Code Injection` | 2 | Malicious code completion, backdoor via refactoring |
+
+---
+
+## Module Details
+
+### 06 · Cybersecurity Tools
+
+Organised into four tool files:
+
+- **`network_tools.py`** – `dns_lookup`, `port_scan`, `analyze_http_headers`, `check_ssl_certificate`, `whois_lookup`
+- **`vulnerability_tools.py`** – `cve_lookup`, `check_dependency_vulnerabilities`, `assess_cvss_score`, `generate_security_report`, `check_owasp_top10`
+- **`crypto_tools.py`** – `identify_hash_type`, `hash_text`, `analyze_password`, `generate_secure_token`, `check_encoding`
+- **`log_analysis_tools.py`** – `parse_access_log`, `detect_brute_force`, `extract_ips_from_log`, `detect_sqli_in_log`, `summarize_log_statistics`
+
+### 07 · LLM Penetration Testing
+
+Organised into four tool files:
+
+- **`prompt_fuzzer.py`** – `generate_fuzz_prompts`, `classify_injection_technique`, `build_indirect_injection`, `evaluate_system_prompt`
+- **`safety_evaluator.py`** – `evaluate_prompt_safety`, `detect_pii`, `detect_harmful_content`, `check_output_alignment`
+- **`adversarial_tools.py`** – `generate_adversarial_variants`, `analyze_attack_surface`, `test_prompt_boundaries`, `simulate_multi_turn_attack`
+- **`model_behavior_tools.py`** – `profile_response_patterns`, `detect_response_bias`, `estimate_hallucination_risk`, `measure_refusal_consistency`
+
+### 08 · Code Refactoring
+
+Organised into four tool files:
+
+- **`static_analysis_tools.py`** – `analyze_code_quality`, `detect_code_smells`, `find_dead_code`, `check_security_patterns`
+- **`complexity_tools.py`** – `calculate_cyclomatic_complexity`, `measure_code_metrics`, `analyze_nesting_depth`, `evaluate_coupling`
+- **`pattern_detection_tools.py`** – `detect_design_patterns`, `find_antipatterns`, `analyze_solid_principles`, `detect_duplicate_logic`
+- **`refactoring_tools.py`** – `suggest_refactorings`, `suggest_extract_method`, `improve_naming`, `simplify_conditionals`
 
 ---
 
@@ -135,12 +214,13 @@ python mcp/05_supply_chain/demo.py
 
 - The GUI supports multiple LLM endpoint configs for side-by-side comparison.
 - Results can be exported from the GUI to Excel (`.xlsx`).
-- The refactor split page UI and business logic into dedicated files under `ui/`.
 - Configs are auto-loaded from `mcp/data/configs_db.json` on each app start.
 - Test runs are appended to `mcp/data/tests_db.json` after each run (not loaded on startup).
+- New modules (06–08) use a `tools/` subdirectory to organise tools by function.
+- All demo scripts run standalone without a live LLM or MCP server.
 
 ---
 
 ## Disclaimer
 
-These examples are for **educational and research use only**. Do not apply these attack techniques to real systems without explicit authorization.
+These examples are for **educational and research use only**. Do not apply attack techniques or security scanning tools to real systems without explicit authorisation.
