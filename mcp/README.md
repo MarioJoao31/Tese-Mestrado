@@ -22,7 +22,12 @@ mcp/
 |   `-- services/
 |       |-- env_loader.py           # Loads defaults from .env
 |       |-- test_runner.py          # Async orchestration for LLM + demo tests
+|       |-- json_db.py              # JSON persistence (configs + test records)
 |       `-- excel_export.py         # Export results to .xlsx
+|
+|-- data/                           # Created automatically at runtime
+|   |-- configs_db.json             # Persisted UI/model configs (auto-loaded)
+|   `-- tests_db.json               # Persisted test run history (write-only on startup)
 |
 |-- 01_basic_mcp/
 |-- 02_prompt_injection/
@@ -131,6 +136,8 @@ python mcp/05_supply_chain/demo.py
 - The GUI supports multiple LLM endpoint configs for side-by-side comparison.
 - Results can be exported from the GUI to Excel (`.xlsx`).
 - The refactor split page UI and business logic into dedicated files under `ui/`.
+- Configs are auto-loaded from `mcp/data/configs_db.json` on each app start.
+- Test runs are appended to `mcp/data/tests_db.json` after each run (not loaded on startup).
 
 ---
 

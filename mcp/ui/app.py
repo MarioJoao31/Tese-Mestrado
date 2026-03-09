@@ -13,6 +13,7 @@ from ui.pages.results_page import ResultsPage
 from ui.pages.run_page import RunPage
 from ui.services.env_loader import load_env_defaults
 from ui.services.excel_export import export_results_to_excel
+from ui.services.json_db import JsonDbService
 from ui.services.test_runner import TestRunnerService
 
 
@@ -31,9 +32,14 @@ class SecurityTestApp:
         self._stop_flag = threading.Event()
         self._sort_col = ""
         self._sort_reverse = False
+        self._run_started_at = ""
 
-        self._defaults = load_env_defaults(Path(__file__).resolve().parents[1])
+        self._base_dir = Path(__file__).resolve().parents[1]
+        self._defaults = load_env_defaults(self._base_dir)
+        self._db = JsonDbService(self._base_dir / "data")
         self._build_ui()
+        self._load_persisted_configs()
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_ui(self) -> None:
         toolbar = ttk.Frame(self.root, padding=(8, 4))
@@ -88,6 +94,7 @@ class SecurityTestApp:
         self.llm_configs.append(cfg)
         self.config_page.llm_listbox.insert(tk.END, f"{name}  [{model}]")
         self.config_page.llm_vars["name"].set("")
+        self._save_configs()
 
     def _update_llm(self) -> None:
         sel = self.config_page.llm_listbox.curselection()
@@ -102,6 +109,7 @@ class SecurityTestApp:
         self.config_page.llm_listbox.delete(idx)
         self.config_page.llm_listbox.insert(idx, f"{cfg.name}  [{cfg.model}]")
         self.config_page.llm_listbox.selection_set(idx)
+        self._save_configs()
 
     def _remove_llm(self) -> None:
         sel = self.config_page.llm_listbox.curselection()
@@ -110,6 +118,7 @@ class SecurityTestApp:
         idx = sel[0]
         self.llm_configs.pop(idx)
         self.config_page.llm_listbox.delete(idx)
+        self._save_configs()
 
     def _on_llm_select(self, _event: tk.Event) -> None:  # type: ignore[type-arg]
         sel = self.config_page.llm_listbox.curselection()
@@ -136,10 +145,12 @@ class SecurityTestApp:
         self.is_running = True
         self._stop_flag.clear()
         self.results = []
+        self._run_started_at = datetime.now().isoformat()
         self.run_page.progress_var.set(0)
         self.run_page.run_btn.config(state=tk.DISABLED)
         self.run_page.stop_btn.config(state=tk.NORMAL)
         self.run_page.status_var.set("Running tests...")
+        self._save_configs()
 
         thread = threading.Thread(
             target=self._run_tests_thread,
@@ -242,6 +253,7 @@ class SecurityTestApp:
         self._log_ui(f"\n{msg}\n", "header")
         self._update_results_view()
         self._nb.select(2)
+        self._save_test_run_record()
 
     def _update_results_view(self) -> None:
         for item in self.results_page.tree.get_children():
@@ -320,6 +332,74 @@ class SecurityTestApp:
         except Exception as exc:
             messagebox.showerror("Export Error", str(exc))
 
+    def _load_persisted_configs(self) -> None:
+        persisted = self._db.load_configs()
+        llm_entries = persisted.get("llm_configs", [])
+        if isinstance(llm_entries, list):
+            for item in llm_entries:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    cfg = LLMConfig(
+                        name=str(item.get("name", "")).strip(),
+                        base_url=str(item.get("base_url", "")).strip(),
+                        api_key=str(item.get("api_key", "")).strip(),
+                        model=str(item.get("model", "")).strip(),
+                    )
+                except Exception:
+                    continue
+                if not cfg.name or not cfg.base_url or not cfg.model:
+                    continue
+                self.llm_configs.append(cfg)
+                self.config_page.llm_listbox.insert(tk.END, f"{cfg.name}  [{cfg.model}]")
+
+        selected_atk = persisted.get("selected_attack_categories")
+        if isinstance(selected_atk, list):
+            selected_set = {str(x) for x in selected_atk}
+            for category, var in self.config_page.atk_vars.items():
+                var.set(category in selected_set)
+
+        selected_demos = persisted.get("selected_demo_categories")
+        if isinstance(selected_demos, list):
+            selected_set = {str(x) for x in selected_demos}
+            for category, var in self.config_page.demo_vars.items():
+                var.set(category in selected_set)
+
+        custom_prompt = persisted.get("custom_prompt")
+        if isinstance(custom_prompt, str) and custom_prompt.strip():
+            self.config_page.custom_prompt_var.set(custom_prompt)
+
+    def _save_configs(self) -> None:
+        selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
+        selected_demo_cats = [c for c, v in self.config_page.demo_vars.items() if v.get()]
+        try:
+            self._db.save_configs(
+                llm_configs=self.llm_configs,
+                selected_attack_categories=selected_llm_cats,
+                selected_demo_categories=selected_demo_cats,
+                custom_prompt=self.config_page.custom_prompt_var.get().strip(),
+            )
+        except OSError:
+            pass
+
+    def _save_test_run_record(self) -> None:
+        selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
+        selected_demo_cats = [c for c, v in self.config_page.demo_vars.items() if v.get()]
+        try:
+            self._db.append_test_run(
+                run_started_at=self._run_started_at or datetime.now().isoformat(),
+                llm_configs=self.llm_configs,
+                selected_attack_categories=selected_llm_cats,
+                selected_demo_categories=selected_demo_cats,
+                results=self.results,
+            )
+        except OSError:
+            pass
+
+    def _on_close(self) -> None:
+        self._save_configs()
+        self.root.destroy()
+
 
 def main() -> None:
     root = tk.Tk()
@@ -332,4 +412,3 @@ def main() -> None:
 
     SecurityTestApp(root)
     root.mainloop()
-
