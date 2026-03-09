@@ -330,6 +330,7 @@ def check_ssl_certificate(hostname: str, port: int = 443) -> str:
 
     try:
         ctx = ssl.create_default_context()
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2  # Enforce TLS 1.2+ for security
         with ctx.wrap_socket(
             socket.create_connection((hostname, port), timeout=5), server_hostname=hostname
         ) as ssock:

@@ -4,7 +4,7 @@ pattern_detection_tools.py
 MCP tools for detecting design patterns and anti-patterns in source code.
 
 Tools:
-  - detect_design_patterns  : Identify GoF design patterns.
+  - detect_design_patterns  : Identify Gang of Four (GoF) design patterns.
   - find_antipatterns       : Detect known anti-patterns and bad practices.
   - analyze_solid_principles: Check adherence to SOLID principles.
   - detect_duplicate_logic  : Find repeated logic blocks (copy-paste detection).
@@ -52,7 +52,7 @@ _DESIGN_PATTERN_INDICATORS: dict[str, dict] = {
             r"self\._subscribers\b",
         ],
         "description": "Observer – notifies dependents of state changes.",
-        "category": "behavioural",
+        "category": "behavioral",
     },
     "strategy": {
         "patterns": [
@@ -62,7 +62,7 @@ _DESIGN_PATTERN_INDICATORS: dict[str, dict] = {
             r"def\s+set_strategy\s*\(",
         ],
         "description": "Strategy – encapsulates interchangeable algorithms.",
-        "category": "behavioural",
+        "category": "behavioral",
     },
     "decorator": {
         "patterns": [
@@ -81,7 +81,7 @@ _DESIGN_PATTERN_INDICATORS: dict[str, dict] = {
             r"self\._history\b",
         ],
         "description": "Command – encapsulates a request as an object.",
-        "category": "behavioural",
+        "category": "behavioral",
     },
     "context_manager": {
         "patterns": [
@@ -98,7 +98,7 @@ _DESIGN_PATTERN_INDICATORS: dict[str, dict] = {
             r"def\s+__next__\s*\(self",
         ],
         "description": "Iterator – provides sequential access to elements.",
-        "category": "behavioural",
+        "category": "behavioral",
     },
 }
 
@@ -303,7 +303,7 @@ def find_antipatterns(code: str) -> str:
 @_mcp.tool()
 def analyze_solid_principles(code: str) -> str:
     """
-    Analyse how well the code adheres to SOLID design principles.
+    Analyze how well the code adheres to SOLID design principles.
 
     Args:
         code: Source code text (max 100 000 characters).

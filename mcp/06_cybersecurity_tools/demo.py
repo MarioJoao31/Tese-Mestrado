@@ -97,7 +97,7 @@ def demo_vulnerability_tools() -> None:
     show("assess_cvss_score(10.0) [Critical]", assess_cvss_score(10.0))
     show("assess_cvss_score(5.4) [Medium]",    assess_cvss_score(5.4))
 
-    # OWASP Top-10 scan
+    # OWASP Top 10 scan
     vulnerable_snippet = """
 import os
 def login(username, password):

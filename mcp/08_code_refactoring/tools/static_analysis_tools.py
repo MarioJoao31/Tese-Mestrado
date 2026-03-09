@@ -192,10 +192,10 @@ def _count_function_lines(code: str) -> list[dict]:
 @_mcp.tool()
 def analyze_code_quality(code: str, language: str = "python") -> str:
     """
-    Compute an overall quality score and summarise violations.
+    Compute an overall quality score and summarize violations.
 
     Args:
-        code:     Source code text to analyse (max 100 000 characters).
+        code:     Source code text to analyze (max 100 000 characters).
         language: Programming language hint (python, javascript, java, generic).
 
     Returns:
@@ -291,7 +291,7 @@ def detect_code_smells(code: str) -> str:
     Identify specific code smells with line-level context where possible.
 
     Args:
-        code: Source code text to analyse (max 100 000 characters).
+        code: Source code text to analyze (max 100 000 characters).
 
     Returns:
         JSON with detected smells, descriptions, and fix suggestions.
@@ -359,7 +359,7 @@ def find_dead_code(code: str) -> str:
     Locate potentially unused variables, unreachable code, and redundant imports.
 
     Args:
-        code: Python source code text to analyse.
+        code: Python source code text to analyze.
 
     Returns:
         JSON with detected dead code patterns and removal suggestions.
