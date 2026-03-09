@@ -2,20 +2,20 @@
   "llm_configs": [
     {
       "name": "laama3.1-8b",
-      "base_url": "http://localhost:1234/v1",
-      "api_key": "lm-studio",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "ollama",
       "model": "llama3.1:8b"
     },
     {
       "name": "qwen2.5-7b",
-      "base_url": "http://localhost:1234/v1",
-      "api_key": "lm-studio",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "ollama",
       "model": "qwen2.5:7b"
     },
     {
       "name": "mistral",
-      "base_url": "http://localhost:1234/v1",
-      "api_key": "lm-studio",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "ollama",
       "model": "mistral:7b"
     }
   ],

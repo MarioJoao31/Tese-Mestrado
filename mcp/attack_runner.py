@@ -36,9 +36,9 @@ from typing import Callable
 class LLMConfig:
     """Configuration for an OpenAI-compatible LLM endpoint."""
     name: str = "LLM"
-    base_url: str = "http://localhost:1234/v1"
-    api_key: str = "lm-studio"
-    model: str = "llama-3.1-8b-instruct"
+    base_url: str = "http://localhost:11434/v1"
+    api_key: str = "ollama"
+    model: str = "llama3.1:8b"
 
     def __str__(self) -> str:
         return f"{self.name} ({self.model})"
