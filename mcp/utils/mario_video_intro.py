@@ -1,210 +1,61 @@
 from manim import *
-import random
-import numpy as np
+
 
 class MarioTeseMCP(Scene):
-    def construct(self):
-
+    def construct(self) -> None:
         self.camera.background_color = "#030712"
 
-        CYBER_BLUE = "#22D3EE"
-        CYBER_GREEN = "#00FF9C"
+        accent_blue = "#22D3EE"
+        accent_green = "#00FF9C"
+        accent_soft = "#60A5FA"
 
-        # ------------------------------------------------
-        # LIGHT GRID BACKGROUND (very transparent)
-        # ------------------------------------------------
         grid = NumberPlane(
-            x_range=[-8,8,1],
-            y_range=[-4,4,1],
+            x_range=[-8, 8, 1],
+            y_range=[-4, 4, 1],
             background_line_style={
-                "stroke_color": CYBER_BLUE,
-                "stroke_opacity": 0.03,
-                "stroke_width": 1
+                "stroke_color": accent_blue,
+                "stroke_opacity": 0.035,
+                "stroke_width": 1,
             },
-            axis_config={"stroke_opacity":0}
+            axis_config={"stroke_opacity": 0},
         ).scale(1.1)
 
-        # ------------------------------------------------
-        # NETWORK NODES (cyber style)
-        # ------------------------------------------------
-        nodes = VGroup()
-        edges = VGroup()
+        ring = Circle(radius=2.2, color=accent_blue, stroke_width=1.4).set_opacity(0.24)
+        ring2 = Circle(radius=2.65, color=accent_soft, stroke_width=1).set_opacity(0.18)
+        ring_group = VGroup(ring, ring2)
 
-        positions = [
-            [-5,2,0],[-3,1,0],[-1,2,0],[1,1,0],[3,2,0],
-            [-4,-1,0],[-2,-2,0],[0,-1,0],[2,-2,0],[4,-1,0]
-        ]
+        scan_line = Line(LEFT * 7, RIGHT * 7, color=accent_blue).set_opacity(0.10).move_to(UP * 3.1)
 
-        for p in positions:
-            node = Dot(p, radius=0.05, color=CYBER_GREEN).set_opacity(0.35)
-            nodes.add(node)
+        final_title = Text("LLM Security Attack Interface", font="DejaVu Sans", font_size=58, weight=BOLD)
+        final_title.set_color_by_gradient(WHITE, accent_blue, accent_green)
+        final_sub = Text("Launching dashboard...", font="DejaVu Sans Mono", font_size=23, color=GRAY_B)
+        final_sub.next_to(final_title, DOWN, buff=0.35)
+        glow_title = final_title.copy().set_color(accent_blue).set_opacity(0.14).scale(1.08)
 
-        connections = [
-            (0,1),(1,2),(2,3),(3,4),
-            (0,5),(1,6),(2,7),(3,8),(4,9)
-        ]
-
-        for a,b in connections:
-            edge = Line(
-                nodes[a].get_center(),
-                nodes[b].get_center(),
-                color=CYBER_BLUE,
-                stroke_width=1
-            ).set_opacity(0.15)
-            edges.add(edge)
-
-        network = VGroup(edges,nodes)
-
-        # ------------------------------------------------
-        # TERMINAL LOGS
-        # ------------------------------------------------
-        logs = VGroup()
-
-        log_strings = [
-            "scanning MCP interface...",
-            "verifying tool permissions...",
-            "detecting prompt injection...",
-            "checking agent boundaries..."
-        ]
-
-        y = 3
-
-        for log in log_strings:
-
-            t = Text(
-                log,
-                font="DejaVu Sans Mono",
-                font_size=16,
-                color=CYBER_GREEN
+        # ~4 seconds total intro focused only on the dashboard reveal.
+        self.play(FadeIn(grid), FadeIn(ring_group), run_time=0.45)
+        self.play(scan_line.animate.move_to(DOWN * 3.1), run_time=0.9, rate_func=linear)
+        self.play(
+            FadeIn(glow_title),
+            FadeIn(final_title, shift=0.1 * UP),
+            FadeIn(final_sub, shift=0.1 * UP),
+            run_time=0.85,
+        )
+        self.play(
+            AnimationGroup(
+                ApplyWave(final_title, amplitude=0.08, run_time=0.55),
+                Flash(final_title.get_center(), color=accent_blue, line_length=0.7, num_lines=14, flash_radius=2.0),
+                lag_ratio=0.06,
             )
-
-            t.set_opacity(0.18)
-            t.move_to([-5.5,y,0])
-            logs.add(t)
-
-            y -= 0.5
-
-        # ------------------------------------------------
-        # SCANNING LINE
-        # ------------------------------------------------
-        scan_line = Line(
-            LEFT*7,
-            RIGHT*7,
-            color=CYBER_BLUE
-        ).set_opacity(0.08)
-
-        scan_line.move_to(UP*3)
-
-        # ------------------------------------------------
-        # HEX CYBER SHAPES
-        # ------------------------------------------------
-        hex1 = RegularPolygon(
-            n=6,
-            radius=0.7,
-            color=CYBER_BLUE
-        ).set_opacity(0.08)
-
-        hex1.move_to(RIGHT*5 + UP*2)
-
-        hex2 = RegularPolygon(
-            n=6,
-            radius=0.9,
-            color=CYBER_BLUE
-        ).set_opacity(0.05)
-
-        hex2.move_to(LEFT*5 + DOWN*2)
-
-        # ------------------------------------------------
-        # MAIN TITLE
-        # ------------------------------------------------
-        text = Text(
-            "Mário Tese MCP",
-            font="DejaVu Sans",
-            font_size=72,
-            color=WHITE,
-            weight=BOLD
         )
-
-        text.move_to(ORIGIN)
-
-        glow = text.copy().set_color(CYBER_BLUE).scale(1.05).set_opacity(0.15)
-
-        subtitle = Text(
-            "Secure MCP Framework",
-            font="DejaVu Sans Mono",
-            font_size=26,
-            color=GRAY_B
-        )
-
-        subtitle.next_to(text,DOWN,buff=0.4)
-
-        underline = Line(
-            LEFT*3,
-            RIGHT*3,
-            color=CYBER_BLUE
-        ).set_opacity(0.3)
-
-        underline.next_to(subtitle,DOWN,buff=0.25)
-
-        # ------------------------------------------------
-        # BUILD BACKGROUND
-        # ------------------------------------------------
         self.play(
-            FadeIn(grid),
-            FadeIn(network),
-            FadeIn(hex1),
-            FadeIn(hex2),
-            FadeIn(logs),
-            run_time=0.5
+            ring_group.animate.scale(1.05).set_opacity(0.14),
+            final_title.animate.scale(1.02),
+            run_time=0.3,
         )
-
-        # scanning animation
+        self.play(final_title.animate.scale(1 / 1.02), run_time=0.2)
+        self.wait(0.3)
         self.play(
-            scan_line.animate.move_to(DOWN*3),
-            run_time=1,
-            rate_func=linear
-        )
-
-        # ------------------------------------------------
-        # TITLE
-        # ------------------------------------------------
-        self.play(
-            FadeIn(glow),
-            AddTextLetterByLetter(text,time_per_char=0.035),
-            run_time=1.2
-        )
-
-        self.play(
-            FadeIn(subtitle),
-            Create(underline),
-            run_time=0.3
-        )
-
-        # pulse
-        self.play(
-            text.animate.scale(1.05),
-            run_time=0.15
-        )
-
-        self.play(
-            text.animate.scale(1/1.05),
-            run_time=0.15
-        )
-
-        self.wait(0.2)
-
-        # ------------------------------------------------
-        # OUT
-        # ------------------------------------------------
-        self.play(
-            FadeOut(grid),
-            FadeOut(network),
-            FadeOut(hex1),
-            FadeOut(hex2),
-            FadeOut(logs),
-            FadeOut(text),
-            FadeOut(glow),
-            FadeOut(subtitle),
-            FadeOut(underline),
-            run_time=0.4
+            FadeOut(VGroup(grid, ring_group, scan_line, final_title, final_sub, glow_title)),
+            run_time=0.5,
         )

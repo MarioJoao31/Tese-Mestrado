@@ -72,6 +72,7 @@ pip install -r requirements.txt
 ## LLM Setup
 
 ### Option A: LM Studio (recommended)
+
 1. Install [LM Studio](https://lmstudio.ai)
 2. Load a model (example: `llama-3.1-8b-instruct`)
 3. Start the local server at `http://localhost:1234`
@@ -150,35 +151,35 @@ python mcp/08_code_refactoring/demo.py
 
 ### Security Scenarios (01–05)
 
-| Folder | Security Topic | Description |
-|--------|---------------|-------------|
-| `01_basic_mcp` | Basics | Intro MCP server + LangChain client with 5 security-aware tools |
-| `02_prompt_injection` | Prompt Injection | Direct and indirect prompt-injection demos |
-| `03_tool_misuse` | Tool Misuse | Confused-deputy, path traversal, SQL injection, exfiltration patterns |
-| `04_memory_attacks` | Memory Attacks | Persistent-memory poisoning and cross-session contamination |
-| `05_supply_chain` | Supply Chain | Legitimate vs malicious MCP server substitution with backdoors |
+| Folder                | Security Topic   | Description                                                           |
+| --------------------- | ---------------- | --------------------------------------------------------------------- |
+| `01_basic_mcp`        | Basics           | Intro MCP server + LangChain client with 5 security-aware tools       |
+| `02_prompt_injection` | Prompt Injection | Direct and indirect prompt-injection demos                            |
+| `03_tool_misuse`      | Tool Misuse      | Confused-deputy, path traversal, SQL injection, exfiltration patterns |
+| `04_memory_attacks`   | Memory Attacks   | Persistent-memory poisoning and cross-session contamination           |
+| `05_supply_chain`     | Supply Chain     | Legitimate vs malicious MCP server substitution with backdoors        |
 
 ### New Tool Modules (06–08)
 
-| Folder | Category | Tools |
-|--------|----------|-------|
-| `06_cybersecurity_tools` | Cybersecurity | 20 tools: network analysis, CVE/CVSS, cryptography, log analysis |
-| `07_llm_pentest` | LLM Pen Testing | 16 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour |
-| `08_code_refactoring` | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
+| Folder                   | Category         | Tools                                                                             |
+| ------------------------ | ---------------- | --------------------------------------------------------------------------------- |
+| `06_cybersecurity_tools` | Cybersecurity    | 20 tools: network analysis, CVE/CVSS, cryptography, log analysis                  |
+| `07_llm_pentest`         | LLM Pen Testing  | 16 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour |
+| `08_code_refactoring`    | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
 
 ### LLM Attack Test Categories (attack_runner.py)
 
-| Category | Tests | Description |
-|----------|-------|-------------|
-| `01. Baseline` | 2 | Normal queries that should succeed |
-| `02. Direct Injection` | 4 | Override, role-play, code-block, separator |
-| `03. Indirect Injection` | 2 | Hidden document and invisible text |
-| `04. Tool Misuse` | 2 | Confused deputy, path traversal |
-| `05. Memory Attack` | 2 | Poisoned memory, cross-session contamination |
-| `06. Supply Chain` | 1 | Malicious tool description |
-| `07. Cybersecurity` | 3 | Social engineering, exploitation request, credential exfil |
-| `08. LLM Pen Testing` | 2 | Identity extraction, hypothetical framing |
-| `09. Code Injection` | 2 | Malicious code completion, backdoor via refactoring |
+| Category                 | Tests | Description                                                |
+| ------------------------ | ----- | ---------------------------------------------------------- |
+| `01. Baseline`           | 2     | Normal queries that should succeed                         |
+| `02. Direct Injection`   | 4     | Override, role-play, code-block, separator                 |
+| `03. Indirect Injection` | 2     | Hidden document and invisible text                         |
+| `04. Tool Misuse`        | 2     | Confused deputy, path traversal                            |
+| `05. Memory Attack`      | 2     | Poisoned memory, cross-session contamination               |
+| `06. Supply Chain`       | 1     | Malicious tool description                                 |
+| `07. Cybersecurity`      | 3     | Social engineering, exploitation request, credential exfil |
+| `08. LLM Pen Testing`    | 2     | Identity extraction, hypothetical framing                  |
+| `09. Code Injection`     | 2     | Malicious code completion, backdoor via refactoring        |
 
 ---
 
@@ -227,3 +228,10 @@ Organised into four tool files:
 ## Disclaimer
 
 These examples are for **educational and research use only**. Do not apply attack techniques or security scanning tools to real systems without explicit authorisation.
+
+## to run the video maker for the intro
+
+to run manim exec to create the video 
+```bash
+manim -pqh utils/mario_video_intro.py MarioTeseMCP
+```
