@@ -217,3 +217,5 @@ __marimo__/
 mcp/utils/media/videos/*
 mcp/utils/media/texts/*
 mcp/utils/media/images/*
+
+mcp/media/texts/
