@@ -32,6 +32,7 @@ class JsonDbService:
         selected_attack_categories: list[str],
         selected_demo_categories: list[str],
         custom_prompt: str,
+        custom_mcp_servers: list[dict],
     ) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         payload = {
@@ -39,6 +40,7 @@ class JsonDbService:
             "selected_attack_categories": selected_attack_categories,
             "selected_demo_categories": selected_demo_categories,
             "custom_prompt": custom_prompt,
+            "custom_mcp_servers": custom_mcp_servers,
         }
         with open(self.config_path, "w", encoding="utf-8") as fh:
             json.dump(payload, fh, indent=2, ensure_ascii=False)

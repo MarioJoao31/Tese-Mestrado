@@ -13,6 +13,7 @@ import httpx
 from attack_runner import AttackResult, DEMO_SCRIPTS, LLMConfig
 from ui.intro import play_startup_intro
 from ui.pages.config_page import ConfigPage
+from ui.pages.mcp_servers_page import McpServersPage
 from ui.pages.results_page import ResultsPage
 from ui.pages.run_page import RunPage
 from ui.services.env_loader import load_env_defaults
@@ -32,6 +33,7 @@ class SecurityTestApp:
 
         self.llm_configs: list[LLMConfig] = []
         self.results: list[AttackResult] = []
+        self.custom_mcp_servers: list[dict[str, str | int | bool]] = []
         self.is_running = False
         self._stop_flag = threading.Event()
         self._sort_col = ""
@@ -59,10 +61,12 @@ class SecurityTestApp:
         cfg_tab = ttk.Frame(self._nb)
         run_tab = ttk.Frame(self._nb)
         res_tab = ttk.Frame(self._nb)
+        mcp_tab = ttk.Frame(self._nb)
 
         self._nb.add(cfg_tab, text="Configuration")
         self._nb.add(run_tab, text="Run Tests")
         self._nb.add(res_tab, text="Results")
+        self._nb.add(mcp_tab, text="MCP Servers")
 
         self.config_page = ConfigPage(
             cfg_tab,
@@ -84,6 +88,125 @@ class SecurityTestApp:
             on_sort=self._sort_tree,
             on_select=self._on_result_select,
         )
+        self.mcp_servers_page = McpServersPage(
+            mcp_tab,
+            on_select=self._on_mcp_server_select,
+            on_add=self._add_mcp_server,
+            on_update=self._update_mcp_server,
+            on_remove=self._remove_mcp_server,
+        )
+
+    def _active_demo_scripts(self) -> list[dict]:
+        selected_categories = {c for c, v in self.config_page.demo_vars.items() if v.get()}
+        selected_default_demos = [d for d in DEMO_SCRIPTS if d["category"] in selected_categories]
+
+        custom_demos: list[dict] = []
+        for entry in self.custom_mcp_servers:
+            if not bool(entry.get("enabled", True)):
+                continue
+            category = str(entry.get("server_name", "Custom MCP")).strip()
+            tool_name = str(entry.get("tool_name", "custom_tool")).strip()
+            script = str(entry.get("script", "")).strip()
+            timeout = int(entry.get("timeout", 60))
+            if not script:
+                continue
+            custom_demos.append(
+                {
+                    "category": f"{category} (custom)",
+                    "name": tool_name,
+                    "script": script,
+                    "timeout": timeout,
+                }
+            )
+
+        return selected_default_demos + custom_demos
+
+    def _add_mcp_server(self) -> None:
+        server_name = self.mcp_servers_page.server_vars["server_name"].get().strip()
+        tool_name = self.mcp_servers_page.server_vars["tool_name"].get().strip()
+        script = self.mcp_servers_page.server_vars["script"].get().strip()
+        timeout_raw = self.mcp_servers_page.server_vars["timeout"].get().strip()
+        enabled_raw = self.mcp_servers_page.server_vars["enabled"].get().strip().lower()
+
+        if not server_name or not tool_name or not script:
+            messagebox.showwarning("Validation Error", "Server name, tool name and script path are required.")
+            return
+
+        try:
+            timeout = max(1, int(timeout_raw))
+        except ValueError:
+            messagebox.showwarning("Validation Error", "Timeout must be an integer number of seconds.")
+            return
+
+        enabled = enabled_raw not in {"false", "0", "no", "off"}
+        entry: dict[str, str | int | bool] = {
+            "server_name": server_name,
+            "tool_name": tool_name,
+            "script": script,
+            "timeout": timeout,
+            "enabled": enabled,
+        }
+        self.custom_mcp_servers.append(entry)
+        status = "enabled" if enabled else "disabled"
+        self.mcp_servers_page.server_listbox.insert(tk.END, f"{server_name} :: {tool_name} [{status}]")
+        self._save_configs()
+
+    def _update_mcp_server(self) -> None:
+        sel = self.mcp_servers_page.server_listbox.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+
+        server_name = self.mcp_servers_page.server_vars["server_name"].get().strip()
+        tool_name = self.mcp_servers_page.server_vars["tool_name"].get().strip()
+        script = self.mcp_servers_page.server_vars["script"].get().strip()
+        timeout_raw = self.mcp_servers_page.server_vars["timeout"].get().strip()
+        enabled_raw = self.mcp_servers_page.server_vars["enabled"].get().strip().lower()
+
+        if not server_name or not tool_name or not script:
+            messagebox.showwarning("Validation Error", "Server name, tool name and script path are required.")
+            return
+        try:
+            timeout = max(1, int(timeout_raw))
+        except ValueError:
+            messagebox.showwarning("Validation Error", "Timeout must be an integer number of seconds.")
+            return
+
+        enabled = enabled_raw not in {"false", "0", "no", "off"}
+        entry: dict[str, str | int | bool] = {
+            "server_name": server_name,
+            "tool_name": tool_name,
+            "script": script,
+            "timeout": timeout,
+            "enabled": enabled,
+        }
+        self.custom_mcp_servers[idx] = entry
+
+        status = "enabled" if enabled else "disabled"
+        self.mcp_servers_page.server_listbox.delete(idx)
+        self.mcp_servers_page.server_listbox.insert(idx, f"{server_name} :: {tool_name} [{status}]")
+        self.mcp_servers_page.server_listbox.selection_set(idx)
+        self._save_configs()
+
+    def _remove_mcp_server(self) -> None:
+        sel = self.mcp_servers_page.server_listbox.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        self.custom_mcp_servers.pop(idx)
+        self.mcp_servers_page.server_listbox.delete(idx)
+        self._save_configs()
+
+    def _on_mcp_server_select(self, _event: tk.Event) -> None:  # type: ignore[type-arg]
+        sel = self.mcp_servers_page.server_listbox.curselection()
+        if not sel:
+            return
+        entry = self.custom_mcp_servers[sel[0]]
+        self.mcp_servers_page.server_vars["server_name"].set(str(entry.get("server_name", "")))
+        self.mcp_servers_page.server_vars["tool_name"].set(str(entry.get("tool_name", "")))
+        self.mcp_servers_page.server_vars["script"].set(str(entry.get("script", "")))
+        self.mcp_servers_page.server_vars["timeout"].set(str(entry.get("timeout", 60)))
+        self.mcp_servers_page.server_vars["enabled"].set("true" if bool(entry.get("enabled", True)) else "false")
 
     def _add_llm(self) -> None:
         name = self.config_page.llm_vars["name"].get().strip()
@@ -194,7 +317,7 @@ class SecurityTestApp:
             return
 
         selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
-        selected_demos = [d for d in DEMO_SCRIPTS if self.config_page.demo_vars.get(d["category"], tk.BooleanVar()).get()]
+        selected_demos = self._active_demo_scripts()
 
         if self.llm_configs and not selected_llm_cats and not selected_demos:
             messagebox.showwarning("Nothing selected", "Select at least one attack category to run.")
@@ -427,6 +550,28 @@ class SecurityTestApp:
         if isinstance(custom_prompt, str) and custom_prompt.strip():
             self.config_page.custom_prompt_var.set(custom_prompt)
 
+        custom_servers = persisted.get("custom_mcp_servers")
+        if isinstance(custom_servers, list):
+            for item in custom_servers:
+                if not isinstance(item, dict):
+                    continue
+                script = str(item.get("script", "")).strip()
+                if not script:
+                    continue
+                entry: dict[str, str | int | bool] = {
+                    "server_name": str(item.get("server_name", "Custom MCP Server")).strip() or "Custom MCP Server",
+                    "tool_name": str(item.get("tool_name", "custom_tool")).strip() or "custom_tool",
+                    "script": script,
+                    "timeout": int(item.get("timeout", 60)),
+                    "enabled": bool(item.get("enabled", True)),
+                }
+                self.custom_mcp_servers.append(entry)
+                status = "enabled" if bool(entry["enabled"]) else "disabled"
+                self.mcp_servers_page.server_listbox.insert(
+                    tk.END,
+                    f"{entry['server_name']} :: {entry['tool_name']} [{status}]",
+                )
+
     def _save_configs(self) -> None:
         selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
         selected_demo_cats = [c for c, v in self.config_page.demo_vars.items() if v.get()]
@@ -436,6 +581,7 @@ class SecurityTestApp:
                 selected_attack_categories=selected_llm_cats,
                 selected_demo_categories=selected_demo_cats,
                 custom_prompt=self.config_page.custom_prompt_var.get().strip(),
+                custom_mcp_servers=self.custom_mcp_servers,
             )
         except OSError:
             pass
