@@ -15,6 +15,7 @@ class ConfigPage:
         on_add_llm: callable,
         on_update_llm: callable,
         on_remove_llm: callable,
+        on_import_ollama_models: callable,
     ) -> None:
         self._parent = parent
         self._defaults = defaults
@@ -22,12 +23,14 @@ class ConfigPage:
         self._on_add_llm = on_add_llm
         self._on_update_llm = on_update_llm
         self._on_remove_llm = on_remove_llm
+        self._on_import_ollama_models = on_import_ollama_models
 
         self.llm_vars: dict[str, tk.StringVar] = {}
         self.atk_vars: dict[str, tk.BooleanVar] = {}
         self.demo_vars: dict[str, tk.BooleanVar] = {}
         self.custom_prompt_var = tk.StringVar()
         self.llm_listbox: tk.Listbox
+        self._model_combo: ttk.Combobox
 
         self.build()
 
@@ -50,13 +53,25 @@ class ConfigPage:
             ("name", "Name", "My LLM"),
             ("base_url", "Base URL", self._defaults["base_url"]),
             ("api_key", "API Key", self._defaults["api_key"]),
-            ("model", "Model", self._defaults["model"]),
         ]
         for row_idx, (key, label, default) in enumerate(fields):
             ttk.Label(form, text=label + ":", anchor="w").grid(row=row_idx, column=0, sticky="w", padx=(0, 6), pady=2)
             var = tk.StringVar(value=default)
             self.llm_vars[key] = var
             ttk.Entry(form, textvariable=var).grid(row=row_idx, column=1, sticky="ew", pady=2)
+
+        model_row = len(fields)
+        ttk.Label(form, text="Model:", anchor="w").grid(row=model_row, column=0, sticky="w", padx=(0, 6), pady=2)
+        model_var = tk.StringVar(value=self._defaults["model"])
+        self.llm_vars["model"] = model_var
+        self._model_combo = ttk.Combobox(form, textvariable=model_var, values=[self._defaults["model"]])
+        self._model_combo.grid(row=model_row, column=1, sticky="ew", pady=2)
+
+        ttk.Button(
+            form,
+            text="Import Ollama Models",
+            command=self._on_import_ollama_models,
+        ).grid(row=model_row + 1, column=1, sticky="w", pady=(4, 0))
 
         btn_row = ttk.Frame(llm_frame)
         btn_row.pack(fill=tk.X, pady=(8, 0))
@@ -97,3 +112,13 @@ class ConfigPage:
         )
         ttk.Entry(atk_frame, textvariable=self.custom_prompt_var).pack(fill=tk.X, pady=(2, 0))
 
+    def set_model_options(self, models: list[str]) -> None:
+        current = self.llm_vars["model"].get().strip()
+        merged: list[str] = list(self._model_combo.cget("values"))
+        for model in models:
+            if model not in merged:
+                merged.append(model)
+        self._model_combo.configure(values=merged)
+
+        if not current and merged:
+            self.llm_vars["model"].set(merged[0])

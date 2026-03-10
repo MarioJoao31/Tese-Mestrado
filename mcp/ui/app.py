@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import subprocess
 import threading
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
+import httpx
+
 from attack_runner import AttackResult, DEMO_SCRIPTS, LLMConfig
+from ui.intro import play_startup_intro
 from ui.pages.config_page import ConfigPage
 from ui.pages.results_page import ResultsPage
 from ui.pages.run_page import RunPage
@@ -67,6 +71,7 @@ class SecurityTestApp:
             on_add_llm=self._add_llm,
             on_update_llm=self._update_llm,
             on_remove_llm=self._remove_llm,
+            on_import_ollama_models=self._import_ollama_models,
         )
         self.run_page = RunPage(
             run_tab,
@@ -119,6 +124,59 @@ class SecurityTestApp:
         self.llm_configs.pop(idx)
         self.config_page.llm_listbox.delete(idx)
         self._save_configs()
+
+    def _import_ollama_models(self) -> None:
+        models: list[str] = []
+
+        # Preferred: Ollama HTTP API (works even when binary is not in PATH).
+        try:
+            response = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
+            response.raise_for_status()
+            data = response.json()
+            raw_models = data.get("models", [])
+            if isinstance(raw_models, list):
+                models = [
+                    str(item.get("name", "")).strip()
+                    for item in raw_models
+                    if isinstance(item, dict) and str(item.get("name", "")).strip()
+                ]
+        except (httpx.HTTPError, ValueError):
+            models = []
+
+        # Fallback: CLI output parser.
+        if not models:
+            try:
+                proc = subprocess.run(
+                    ["ollama", "list"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                lines = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]
+                for line in lines[1:]:
+                    name = line.split()[0].strip()
+                    if name:
+                        models.append(name)
+            except (OSError, subprocess.SubprocessError):
+                models = []
+
+        unique_models = sorted(set(models))
+        if not unique_models:
+            messagebox.showwarning(
+                "Ollama Models",
+                "No installed models were found. Make sure Ollama is running and has pulled models.",
+            )
+            return
+
+        self.config_page.set_model_options(unique_models)
+        current_base_url = self.config_page.llm_vars["base_url"].get().strip()
+        current_api_key = self.config_page.llm_vars["api_key"].get().strip()
+        if not current_base_url or current_base_url == "http://localhost:1234/v1":
+            self.config_page.llm_vars["base_url"].set("http://localhost:11434/v1")
+        if not current_api_key or current_api_key == "lm-studio":
+            self.config_page.llm_vars["api_key"].set("ollama")
+        messagebox.showinfo("Ollama Models", f"Imported {len(unique_models)} model(s) from Ollama.")
 
     def _on_llm_select(self, _event: tk.Event) -> None:  # type: ignore[type-arg]
         sel = self.config_page.llm_listbox.curselection()
@@ -403,6 +461,8 @@ class SecurityTestApp:
 
 def main() -> None:
     root = tk.Tk()
+    play_startup_intro(root, Path(__file__).resolve().parents[1])
+
     style = ttk.Style(root)
     available = style.theme_names()
     for preferred in ("clam", "alt", "default"):

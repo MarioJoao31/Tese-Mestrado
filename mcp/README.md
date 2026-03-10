@@ -60,7 +60,7 @@ mcp/
 
 1. Python 3.10+
 2. Local LLM endpoint (LM Studio or Ollama)
-3. Install dependencies:
+3. Install dependencies (includes Manim for startup intro animation):
 
 ```bash
 cd mcp
@@ -120,6 +120,9 @@ Or inside `mcp/`:
 ```bash
 python interface.py
 ```
+
+The app now plays a Manim intro animation (`Mário Tese MCP Cyber`) before the Tkinter UI opens.
+If you want to skip it, set `MCP_DISABLE_INTRO=1` before running.
 
 ### 2. Run backend tests from CLI
 
