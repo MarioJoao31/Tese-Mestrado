@@ -494,7 +494,7 @@ DEMO_SCRIPTS: list[dict] = [
 async def run_llm_test(
     llm_config: LLMConfig,
     test: dict,
-    timeout: float = 30.0,
+    timeout: float = 60.0,
 ) -> AttackResult:
     """
     Run a single LLM test case against the given LLM configuration.

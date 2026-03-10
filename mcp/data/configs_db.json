@@ -23,24 +23,6 @@
       "base_url": "http://localhost:11434/v1",
       "api_key": "ollama",
       "model": "gemma3:1b"
-    },
-    {
-      "name": "foundation-sec--8b",
-      "base_url": "http://localhost:11434/v1",
-      "api_key": "ollama",
-      "model": "FenkoHQ/Foundation-Sec-8B:latest"
-    },
-    {
-      "name": "xploiter",
-      "base_url": "http://localhost:11434/v1",
-      "api_key": "ollama",
-      "model": "xploiter/pentester:latest"
-    },
-    {
-      "name": "deepseek-r1:8b",
-      "base_url": "http://localhost:11434/v1",
-      "api_key": "ollama",
-      "model": "deepseek-r1:8b"
     }
   ],
   "selected_attack_categories": [
