@@ -45,7 +45,8 @@ mcp/
 |       |-- prompt_fuzzer.py        # Adversarial prompts, injection classifier, system prompt audit
 |       |-- safety_evaluator.py     # Safety scoring, PII detection, harm classification
 |       |-- adversarial_tools.py    # Adversarial variants, attack surface, multi-turn attacks
-|       `-- model_behavior_tools.py # Response profiling, bias, hallucination, refusal consistency
+|       |-- model_behavior_tools.py # Response profiling, bias, hallucination, refusal consistency
+|       `-- mcp_exploit_tools.py    # MCP tool weak-point audit, exploit tests, risky output checks
 `-- 08_code_refactoring/            # Code analysis and refactoring tools
     `-- tools/
         |-- static_analysis_tools.py   # Quality score, smells, dead code, security patterns
@@ -164,7 +165,7 @@ python mcp/08_code_refactoring/demo.py
 | Folder                   | Category         | Tools                                                                             |
 | ------------------------ | ---------------- | --------------------------------------------------------------------------------- |
 | `06_cybersecurity_tools` | Cybersecurity    | 20 tools: network analysis, CVE/CVSS, cryptography, log analysis                  |
-| `07_llm_pentest`         | LLM Pen Testing  | 16 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour |
+| `07_llm_pentest`         | LLM Pen Testing  | 19 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour, MCP exploit analysis |
 | `08_code_refactoring`    | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
 
 ### LLM Attack Test Categories (attack_runner.py)
@@ -196,12 +197,13 @@ Organised into four tool files:
 
 ### 07 · LLM Penetration Testing
 
-Organised into four tool files:
+Organised into five tool files:
 
 - **`prompt_fuzzer.py`** – `generate_fuzz_prompts`, `classify_injection_technique`, `build_indirect_injection`, `evaluate_system_prompt`
 - **`safety_evaluator.py`** – `evaluate_prompt_safety`, `detect_pii`, `detect_harmful_content`, `check_output_alignment`
 - **`adversarial_tools.py`** – `generate_adversarial_variants`, `analyze_attack_surface`, `test_prompt_boundaries`, `simulate_multi_turn_attack`
 - **`model_behavior_tools.py`** – `profile_response_patterns`, `detect_response_bias`, `estimate_hallucination_risk`, `measure_refusal_consistency`
+- **`mcp_exploit_tools.py`** – `audit_mcp_tool_design`, `generate_mcp_exploit_tests`, `evaluate_mcp_tool_output_risk`
 
 ### 08 · Code Refactoring
 
