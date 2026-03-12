@@ -16,14 +16,22 @@ mcp/
 |-- ui/
 |   |-- app.py                      # Main Tk controller (wires pages + services)
 |   |-- pages/
+|   |   |-- analyzer_page.py        # "MCP Analyzer" tab
 |   |   |-- config_page.py          # "Configuration" tab
+|   |   |-- mcp_servers_page.py     # "MCP Servers" tab
 |   |   |-- run_page.py             # "Run Tests" tab
 |   |   `-- results_page.py         # "Results" tab
 |   `-- services/
 |       |-- env_loader.py           # Loads defaults from .env
-|       |-- test_runner.py          # Async orchestration for LLM + demo tests
+|       |-- mcp_analyzer.py         # MCP analyzer engine (rules + optional LLM summary)
 |       |-- json_db.py              # JSON persistence (configs + test records)
-|       `-- excel_export.py         # Export results to .xlsx
+|       |-- excel_export.py         # Export test results to .xlsx
+|       |-- test_runner.py          # Async orchestration for LLM + demo tests
+|       `-- tooltip.py              # Reusable hover tooltip helper
+|
+|-- utils/
+|   |-- mario_video_intro.py        # Manim intro scene source
+|   `-- create_exec-dmg.py          # Build executable and macOS DMG
 |
 |-- data/                           # Created automatically at runtime
 |   |-- configs_db.json             # Persisted UI/model configs (auto-loaded)
@@ -144,6 +152,14 @@ python mcp/05_supply_chain/demo.py
 python mcp/06_cybersecurity_tools/demo.py
 python mcp/07_llm_pentest/demo.py
 python mcp/08_code_refactoring/demo.py
+```
+
+### 4. Create executable and DMG (macOS)
+
+From inside `mcp/`:
+
+```bash
+python utils/create_exec-dmg.py
 ```
 
 ---

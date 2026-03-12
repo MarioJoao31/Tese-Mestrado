@@ -12,10 +12,12 @@ import httpx
 
 from attack_runner import AttackResult, DEMO_SCRIPTS, LLMConfig
 from ui.intro import play_startup_intro
+from ui.pages.analyzer_page import AnalyzerPage
 from ui.pages.config_page import ConfigPage
 from ui.pages.mcp_servers_page import McpServersPage
 from ui.pages.results_page import ResultsPage
 from ui.pages.run_page import RunPage
+from ui.services.mcp_analyzer import AnalyzerFinding, AnalyzerReport, McpAnalyzerService
 from ui.services.env_loader import load_env_defaults
 from ui.services.excel_export import export_results_to_excel
 from ui.services.json_db import JsonDbService
@@ -39,12 +41,18 @@ class SecurityTestApp:
         self._sort_col = ""
         self._sort_reverse = False
         self._run_started_at = ""
+        self._analyzer_sort_col = ""
+        self._analyzer_sort_reverse = False
+        self._analyzer_report: AnalyzerReport | None = None
+        self._analyzer_finding_index: dict[str, AnalyzerFinding] = {}
 
         self._base_dir = Path(__file__).resolve().parents[1]
         self._defaults = load_env_defaults(self._base_dir)
         self._db = JsonDbService(self._base_dir / "data")
         self._build_ui()
+        self.analyzer_page.target_var.set(str(self._base_dir))
         self._load_persisted_configs()
+        self._refresh_analyzer_llm_options()
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_ui(self) -> None:
@@ -62,11 +70,13 @@ class SecurityTestApp:
         run_tab = ttk.Frame(self._nb)
         res_tab = ttk.Frame(self._nb)
         mcp_tab = ttk.Frame(self._nb)
+        analyzer_tab = ttk.Frame(self._nb)
 
         self._nb.add(cfg_tab, text="Configuration")
         self._nb.add(run_tab, text="Run Tests")
         self._nb.add(res_tab, text="Results")
         self._nb.add(mcp_tab, text="MCP Servers")
+        self._nb.add(analyzer_tab, text="MCP Analyzer")
 
         self.config_page = ConfigPage(
             cfg_tab,
@@ -94,6 +104,13 @@ class SecurityTestApp:
             on_add=self._add_mcp_server,
             on_update=self._update_mcp_server,
             on_remove=self._remove_mcp_server,
+        )
+        self.analyzer_page = AnalyzerPage(
+            analyzer_tab,
+            on_scan=self._start_analyzer_scan,
+            on_export_json=self._export_analyzer_json,
+            on_select_finding=self._on_analyzer_select,
+            on_sort_findings=self._sort_analyzer_tree,
         )
 
     def _active_demo_scripts(self) -> list[dict]:
@@ -222,6 +239,7 @@ class SecurityTestApp:
         self.llm_configs.append(cfg)
         self.config_page.llm_listbox.insert(tk.END, f"{name}  [{model}]")
         self.config_page.llm_vars["name"].set("")
+        self._refresh_analyzer_llm_options()
         self._save_configs()
 
     def _update_llm(self) -> None:
@@ -237,6 +255,7 @@ class SecurityTestApp:
         self.config_page.llm_listbox.delete(idx)
         self.config_page.llm_listbox.insert(idx, f"{cfg.name}  [{cfg.model}]")
         self.config_page.llm_listbox.selection_set(idx)
+        self._refresh_analyzer_llm_options()
         self._save_configs()
 
     def _remove_llm(self) -> None:
@@ -246,6 +265,7 @@ class SecurityTestApp:
         idx = sel[0]
         self.llm_configs.pop(idx)
         self.config_page.llm_listbox.delete(idx)
+        self._refresh_analyzer_llm_options()
         self._save_configs()
 
     def _import_ollama_models(self) -> None:
@@ -310,6 +330,10 @@ class SecurityTestApp:
         self.config_page.llm_vars["base_url"].set(cfg.base_url)
         self.config_page.llm_vars["api_key"].set(cfg.api_key)
         self.config_page.llm_vars["model"].set(cfg.model)
+
+    def _refresh_analyzer_llm_options(self) -> None:
+        labels = [f"{cfg.name} [{cfg.model}]" for cfg in self.llm_configs]
+        self.analyzer_page.set_llm_options(labels)
 
     def _start_tests(self) -> None:
         if not self.llm_configs and not any(v.get() for v in self.config_page.demo_vars.values()):
@@ -513,6 +537,194 @@ class SecurityTestApp:
         except Exception as exc:
             messagebox.showerror("Export Error", str(exc))
 
+    def _selected_analyzer_llm_config(self) -> LLMConfig | None:
+        selected = self.analyzer_page.selected_llm_var.get().strip()
+        if not selected or selected == "None (rules only)":
+            return None
+        for cfg in self.llm_configs:
+            label = f"{cfg.name} [{cfg.model}]"
+            if label == selected:
+                return cfg
+        return None
+
+    def _start_analyzer_scan(self) -> None:
+        target = self.analyzer_page.target_var.get().strip()
+        include_extensions = self.analyzer_page.include_ext_var.get().strip()
+        exclude_patterns = self.analyzer_page.exclude_var.get().strip()
+
+        if not target:
+            messagebox.showwarning("Analyzer", "Select a target folder to scan.")
+            return
+        target_path = Path(target).expanduser()
+        if not target_path.exists() or not target_path.is_dir():
+            messagebox.showwarning("Analyzer", "Target folder does not exist or is not a directory.")
+            return
+
+        llm_cfg = self._selected_analyzer_llm_config()
+        self._analyzer_report = None
+        self._analyzer_finding_index = {}
+        self.analyzer_page.progress_var.set(0)
+        self.analyzer_page.status_var.set("Scanning files...")
+        self.analyzer_page.set_busy(True)
+        self._clear_analyzer_view()
+
+        thread = threading.Thread(
+            target=self._run_analyzer_thread,
+            args=(str(target_path), include_extensions, exclude_patterns, llm_cfg),
+            daemon=True,
+        )
+        thread.start()
+
+    def _run_analyzer_thread(
+        self,
+        target_path: str,
+        include_extensions: str,
+        exclude_patterns: str,
+        llm_cfg: LLMConfig | None,
+    ) -> None:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            report = loop.run_until_complete(
+                McpAnalyzerService.analyze_mcp_folder(
+                    target_path=target_path,
+                    include_extensions_raw=include_extensions,
+                    exclude_patterns_raw=exclude_patterns,
+                    llm_config=llm_cfg,
+                    on_progress=self._on_analyzer_progress,
+                )
+            )
+        except Exception as exc:
+            report = AnalyzerReport(
+                scan_time=datetime.now().isoformat(),
+                target_path=target_path,
+                files_scanned=0,
+                llm_used=str(llm_cfg) if llm_cfg else "None",
+                errors=[f"Analyzer failed: {exc}"],
+            )
+        finally:
+            loop.close()
+            self.root.after(0, lambda r=report: self._on_analyzer_scan_complete(r))
+
+    def _on_analyzer_progress(self, done: int, total: int) -> None:
+        def _update() -> None:
+            if total <= 0:
+                self.analyzer_page.progress_var.set(0)
+                self.analyzer_page.status_var.set("No files matched the filters.")
+                return
+            pct = done / total * 100
+            self.analyzer_page.progress_var.set(pct)
+            self.analyzer_page.status_var.set(f"Scanning files... {done}/{total}")
+
+        self.root.after(0, _update)
+
+    def _on_analyzer_scan_complete(self, report: AnalyzerReport) -> None:
+        self._analyzer_report = report
+        self._analyzer_finding_index = {finding.id: finding for finding in report.findings}
+        self._update_analyzer_view(report)
+        self.analyzer_page.set_busy(False)
+
+        if report.errors:
+            self.analyzer_page.status_var.set(
+                f"Scan finished with warnings - findings: {len(report.findings)}; errors: {len(report.errors)}."
+            )
+        else:
+            self.analyzer_page.status_var.set(
+                f"Scan complete - scanned {report.files_scanned} files; findings: {len(report.findings)}."
+            )
+        self.analyzer_page.progress_var.set(100)
+
+    def _clear_analyzer_view(self) -> None:
+        for item in self.analyzer_page.tree.get_children():
+            self.analyzer_page.tree.delete(item)
+        self.analyzer_page.detail_text.config(state=tk.NORMAL)
+        self.analyzer_page.detail_text.delete("1.0", tk.END)
+        self.analyzer_page.detail_text.config(state=tk.DISABLED)
+        self.analyzer_page.summary_text.config(state=tk.NORMAL)
+        self.analyzer_page.summary_text.delete("1.0", tk.END)
+        self.analyzer_page.summary_text.config(state=tk.DISABLED)
+
+    def _update_analyzer_view(self, report: AnalyzerReport) -> None:
+        for item in self.analyzer_page.tree.get_children():
+            self.analyzer_page.tree.delete(item)
+
+        for finding in report.findings:
+            self.analyzer_page.tree.insert(
+                "",
+                tk.END,
+                values=(finding.id, finding.severity, finding.category, finding.file, finding.line, finding.evidence),
+                tags=(finding.severity,),
+            )
+
+        summary_parts: list[str] = []
+        if report.llm_summary.strip():
+            summary_parts.append(report.llm_summary.strip())
+        if report.errors:
+            summary_parts.append("Warnings:\n" + "\n".join(f"- {err}" for err in report.errors))
+        if not summary_parts:
+            summary_parts.append("No LLM summary available. Run with a selected LLM to enrich the report.")
+
+        self.analyzer_page.summary_text.config(state=tk.NORMAL)
+        self.analyzer_page.summary_text.delete("1.0", tk.END)
+        self.analyzer_page.summary_text.insert(tk.END, "\n\n".join(summary_parts))
+        self.analyzer_page.summary_text.config(state=tk.DISABLED)
+
+    def _on_analyzer_select(self, _event: tk.Event) -> None:  # type: ignore[type-arg]
+        sel = self.analyzer_page.tree.selection()
+        if not sel:
+            return
+        values = self.analyzer_page.tree.item(sel[0]).get("values", [])
+        if not values:
+            return
+        finding_id = str(values[0])
+        finding = self._analyzer_finding_index.get(finding_id)
+        if not finding:
+            return
+
+        text = (
+            f"ID:            {finding.id}\n"
+            f"Severity:      {finding.severity}\n"
+            f"Category:      {finding.category}\n"
+            f"File:          {finding.file}\n"
+            f"Line:          {finding.line}\n"
+            f"Evidence:      {finding.evidence}\n\n"
+            f"Recommendation:\n{finding.recommendation}\n"
+        )
+        self.analyzer_page.detail_text.config(state=tk.NORMAL)
+        self.analyzer_page.detail_text.delete("1.0", tk.END)
+        self.analyzer_page.detail_text.insert(tk.END, text)
+        self.analyzer_page.detail_text.config(state=tk.DISABLED)
+
+    def _sort_analyzer_tree(self, col: str) -> None:
+        if self._analyzer_sort_col == col:
+            self._analyzer_sort_reverse = not self._analyzer_sort_reverse
+        else:
+            self._analyzer_sort_col = col
+            self._analyzer_sort_reverse = False
+
+        rows = [(self.analyzer_page.tree.set(k, col), k) for k in self.analyzer_page.tree.get_children("")]
+        rows.sort(reverse=self._analyzer_sort_reverse)
+        for idx, (_, key) in enumerate(rows):
+            self.analyzer_page.tree.move(key, "", idx)
+
+    def _export_analyzer_json(self) -> None:
+        if not self._analyzer_report:
+            messagebox.showinfo("Analyzer", "Run a scan first to export a report.")
+            return
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON file", "*.json"), ("All files", "*.*")],
+            initialfile=f"mcp_analyzer_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+        )
+        if not filepath:
+            return
+        try:
+            McpAnalyzerService.export_report_json(self._analyzer_report, filepath)
+            messagebox.showinfo("Analyzer", f"Report exported to:\n{filepath}")
+        except Exception as exc:
+            messagebox.showerror("Analyzer Export Error", str(exc))
+
     def _load_persisted_configs(self) -> None:
         persisted = self._db.load_configs()
         llm_entries = persisted.get("llm_configs", [])
@@ -571,6 +783,7 @@ class SecurityTestApp:
                     tk.END,
                     f"{entry['server_name']} :: {entry['tool_name']} [{status}]",
                 )
+        self._refresh_analyzer_llm_options()
 
     def _save_configs(self) -> None:
         selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]

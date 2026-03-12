@@ -45,7 +45,7 @@ class ResultsPage:
         detail_lf = ttk.LabelFrame(self._parent, text="Detail", padding=4)
         detail_lf.grid(row=2, column=0, columnspan=2, sticky="ew", padx=2, pady=4)
 
-        self.detail_text = scrolledtext.ScrolledText(detail_lf, height=8, font=("Courier", 9), state=tk.DISABLED, wrap=tk.WORD)
+        self.detail_text = scrolledtext.ScrolledText(detail_lf, height=8, font=("Courier", 11), state=tk.DISABLED, wrap=tk.WORD)
         self.detail_text.pack(fill=tk.BOTH, expand=True)
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
 

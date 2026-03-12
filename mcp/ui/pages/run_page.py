@@ -46,15 +46,15 @@ class RunPage:
         log_lf = ttk.LabelFrame(self._parent, text="Live Test Log", padding=4)
         log_lf.pack(fill=tk.BOTH, expand=True, padx=6, pady=4)
 
-        self.log_text = scrolledtext.ScrolledText(log_lf, font=("Courier", 9), state=tk.DISABLED, wrap=tk.WORD)
+        self.log_text = scrolledtext.ScrolledText(log_lf, font=("Courier", 11), state=tk.DISABLED, wrap=tk.WORD)
         self.log_text.pack(fill=tk.BOTH, expand=True)
 
         for tag, cfg in (
             ("safe", {"foreground": "#1a7d00"}),
-            ("vulnerable", {"foreground": "#cc0000", "font": ("Courier", 9, "bold")}),
+            ("vulnerable", {"foreground": "#cc0000", "font": ("Courier", 11, "bold")}),
             ("error", {"foreground": "#e07800"}),
             ("info", {"foreground": "#005fa3"}),
-            ("header", {"font": ("Courier", 9, "bold")}),
+            ("header", {"font": ("Courier", 11, "bold")}),
             ("demo", {"foreground": "#6a0dad"}),
         ):
             self.log_text.tag_configure(tag, **cfg)
