@@ -51,7 +51,7 @@ async def demo_confused_deputy(session: ClientSession) -> None:
     Mitigação: whitelist de domínios no servidor.
     """
     print("\n[Cenário 1] Confused Deputy Attack")
-    print("─" * 50)
+    print("-" * 50)
     print("Descrição: O atacante tenta fazer o agente enviar dados para um email externo.")
 
     # Tentativa 1: Destinatário legítimo (deve funcionar)
@@ -72,9 +72,9 @@ async def demo_confused_deputy(session: ClientSession) -> None:
     })
     print(f"    Resultado: {result}")
     if "BLOQUEADO" in result or "não autorizado" in result or "não está na lista" in result:
-        print("    ✅ Mitigação activa: exfiltração bloqueada pelo servidor MCP")
+        print("    [OK] Mitigacao activa: exfiltracao bloqueada pelo servidor MCP")
     else:
-        print("    ⚠️  Vulnerável: dados enviados para destino não autorizado")
+        print("    [WARN] Vulneravel: dados enviados para destino nao autorizado")
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ async def demo_data_exfiltration(session: ClientSession) -> None:
     Demonstra como a composição de ferramentas pode criar vectores de ataque.
     """
     print("\n[Cenário 2] Data Exfiltration via Composição de Ferramentas")
-    print("─" * 50)
+    print("-" * 50)
     print("Descrição: Reconhecimento + exfiltração via combinação de 2 ferramentas.")
 
     # Fase 1: Reconhecimento
@@ -106,9 +106,9 @@ async def demo_data_exfiltration(session: ClientSession) -> None:
     })
     print(f"    Resultado: {result}")
     if "BLOQUEADO" in result or "não autorizado" in result or "não está na lista" in result:
-        print("    ✅ Mitigação activa: email externo bloqueado")
+        print("    [OK] Mitigacao activa: email externo bloqueado")
     else:
-        print("    ⚠️  Vulnerável: dados de utilizadores exfiltrados")
+        print("    [WARN] Vulneravel: dados de utilizadores exfiltrados")
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +121,7 @@ async def demo_path_traversal(session: ClientSession) -> None:
     O atacante usa '../' para tentar aceder a directorias superiores.
     """
     print("\n[Cenário 3] Path Traversal via Tool Parameter")
-    print("─" * 50)
+    print("-" * 50)
     print("Descrição: Tentativa de escrita fora de ./workspace/ usando ../ ")
 
     traversal_attempts = [
@@ -137,7 +137,7 @@ async def demo_path_traversal(session: ClientSession) -> None:
             "content": "conteúdo malicioso",
         })
         blocked = "acesso negado" in result.lower() or "protegido" in result.lower() or "erro" in result.lower()
-        icon = "✅" if blocked else "⚠️ "
+        icon = "[OK]" if blocked else "[WARN]"
         print(f"\n  Tentativa: '{filename}' ({descricao})")
         print(f"    {icon} Resultado: {result}")
 
@@ -151,7 +151,7 @@ async def demo_query_injection(session: ClientSession) -> None:
     Tentativa de injeção no parâmetro de query para aceder a tabelas não autorizadas.
     """
     print("\n[Cenário 4] Injeção via Parâmetro de Query")
-    print("─" * 50)
+    print("-" * 50)
     print("Descrição: Tentativa de aceder a tabelas não autorizadas via parâmetro.")
 
     query_attempts = [
@@ -164,7 +164,7 @@ async def demo_query_injection(session: ClientSession) -> None:
     for params, descricao in query_attempts:
         result = await call_tool(session, "run_query", params)
         blocked = "não autorizada" in result or "inválido" in result or "Erro" in result
-        icon = "✅" if blocked else ("⚠️ " if "secrets" in str(params) or "DROP" in str(params) else "✅")
+        icon = "[OK]" if blocked else ("[WARN]" if "secrets" in str(params) or "DROP" in str(params) else "[OK]")
         print(f"\n  Query: {json.dumps(params)} ({descricao})")
         print(f"    {icon} Resultado: {result[:120]}")
 
@@ -178,7 +178,7 @@ async def demo_secret_access(session: ClientSession) -> None:
     Tentativa de aceder a credenciais sem token de serviço válido.
     """
     print("\n[Cenário 5] Acesso Não Autorizado a Segredos")
-    print("─" * 50)
+    print("-" * 50)
     print("Descrição: Tentativa de obter segredos sem token de autenticação válido.")
 
     attempts = [
@@ -193,7 +193,7 @@ async def demo_secret_access(session: ClientSession) -> None:
             "service_token": token,
         })
         blocked = "inválido" in result or "ausente" in result
-        icon = "✅" if blocked else "⚠️ "
+        icon = "[OK]" if blocked else "[WARN]"
         print(f"\n  Tentativa: key='{key}', token='{token}' ({descricao})")
         print(f"    {icon} Resultado: {result}")
 
@@ -205,7 +205,7 @@ async def demo_secret_access(session: ClientSession) -> None:
 async def show_audit_log(session: ClientSession) -> None:
     """Mostra o log de auditoria do servidor MCP."""
     print("\n" + "=" * 70)
-    print("AUDIT LOG — Todas as chamadas a ferramentas nesta sessão:")
+    print("AUDIT LOG - Todas as chamadas a ferramentas nesta sessao:")
     print("=" * 70)
     log = await call_tool(session, "get_audit_log", {})
     try:
@@ -230,7 +230,7 @@ async def main() -> None:
     )
 
     print("=" * 70)
-    print("DEMO: TOOL MISUSE — Abuso de Ferramentas por Agente LLM")
+    print("DEMO: TOOL MISUSE - Abuso de Ferramentas por Agente LLM")
     print("=" * 70)
 
     async with stdio_client(server_params) as (read, write):
@@ -248,15 +248,15 @@ async def main() -> None:
             await show_audit_log(session)
 
     print("\n" + "=" * 70)
-    print("RESUMO DE MITIGAÇÕES DEMONSTRADAS")
+    print("RESUMO DE MITIGACOES DEMONSTRADAS")
     print("=" * 70)
     mitigacoes = [
-        "1. Whitelist de domínios de email — previne exfiltração via send_notification",
-        "2. Path traversal protection — impede acesso fora do workspace autorizado",
-        "3. Whitelist de tabelas — impede acesso a dados não autorizados",
-        "4. Validação de nomes de campo — previne injection via parâmetros",
-        "5. Autenticação em ferramentas sensíveis — token obrigatório para segredos",
-        "6. Audit log — todas as acções registadas para análise forense",
+        "1. Whitelist de dominios de email - previne exfiltracao via send_notification",
+        "2. Path traversal protection - impede acesso fora do workspace autorizado",
+        "3. Whitelist de tabelas - impede acesso a dados nao autorizados",
+        "4. Validacao de nomes de campo - previne injection via parametros",
+        "5. Autenticacao em ferramentas sensiveis - token obrigatorio para segredos",
+        "6. Audit log - todas as accoes registadas para analise forense",
     ]
     for m in mitigacoes:
         print(f"  {m}")

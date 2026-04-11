@@ -235,13 +235,13 @@ def demo_refactoring() -> None:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("╔══════════════════════════════════════════════════════════╗")
-    print("║     08 · Code Refactoring Tools – Demo                  ║")
-    print("╚══════════════════════════════════════════════════════════╝")
+    print("==========================================================")
+    print("     08 - Code Refactoring Tools - Demo")
+    print("==========================================================")
 
     demo_static_analysis()
     demo_complexity()
     demo_pattern_detection()
     demo_refactoring()
 
-    print("\n✅  Demo complete.")
+    print("\n[OK] Demo complete.")
