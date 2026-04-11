@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+import sys
+
 from attack_runner import AttackResult
 
 
 def export_results_to_excel(results: list[AttackResult], filepath: str) -> None:
     """Write results to an Excel workbook with multiple sheets."""
-    import openpyxl
-    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-    from openpyxl.utils import get_column_letter
+    try:
+        import openpyxl
+        from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+        from openpyxl.utils import get_column_letter
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Excel export requires the 'openpyxl' package. "
+            f"Current interpreter: {sys.executable}. "
+            "Install project dependencies with 'pip install -r mcp/requirements.txt' "
+            "or install it directly with 'pip install openpyxl' in that same interpreter."
+        ) from exc
 
     wb = openpyxl.Workbook()
 
@@ -151,4 +161,3 @@ def export_results_to_excel(results: list[AttackResult], filepath: str) -> None:
         auto_col_width(ws_cat)
 
     wb.save(filepath)
-
