@@ -3,7 +3,14 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 
-from attack_runner import LLM_ATTACK_TESTS, LLMConfig, run_demo_script, run_llm_test
+from attack_runner import (
+    LLM_ATTACK_TESTS,
+    LLMConfig,
+    count_custom_entry_steps,
+    run_demo_script,
+    run_llm_test,
+    run_mcp_test_suite,
+)
 
 
 class TestRunnerService:
@@ -24,7 +31,9 @@ class TestRunnerService:
         tests_per_llm = [
             t for t in LLM_ATTACK_TESTS if t["category"].split(".")[0].strip() in category_keys
         ]
-        total_steps = len(llm_configs) * len(tests_per_llm) + len(selected_demos)
+        total_steps = len(llm_configs) * len(tests_per_llm) + sum(
+            count_custom_entry_steps(entry) for entry in selected_demos
+        )
         if total_steps == 0:
             return
 
@@ -46,9 +55,15 @@ class TestRunnerService:
             if stop_requested():
                 break
             on_demo_start(demo)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as exe:
-                result = await asyncio.get_event_loop().run_in_executor(exe, run_demo_script, demo)
-            on_demo_done(result, demo)
-            completed += 1
-            on_progress(completed / total_steps * 100)
-
+            if str(demo.get("tests_file", "")).strip():
+                results = await run_mcp_test_suite(demo)
+                for result in results:
+                    on_demo_done(result, demo)
+                    completed += 1
+                    on_progress(completed / total_steps * 100)
+            else:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as exe:
+                    result = await asyncio.get_event_loop().run_in_executor(exe, run_demo_script, demo)
+                on_demo_done(result, demo)
+                completed += 1
+                on_progress(completed / total_steps * 100)

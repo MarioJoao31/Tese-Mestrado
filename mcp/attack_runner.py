@@ -10,6 +10,7 @@ the runtime logic.
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import subprocess
 import sys
@@ -50,6 +51,67 @@ class AttackResult:
     verdict: str
     details: str = ""
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+
+
+def _check_markers(text: str, markers: list[str]) -> bool:
+    """Return True if any marker appears in the text (case-insensitive)."""
+    if not markers:
+        return False
+    lower = text.lower()
+    return any(str(marker).lower() in lower for marker in markers if str(marker).strip())
+
+
+def _resolve_path(path: str) -> str:
+    """Resolve relative paths against the current working directory."""
+    return path if os.path.isabs(path) else os.path.abspath(path)
+
+
+def _load_mcp_test_cases(tests_file: str) -> tuple[list[dict], str | None]:
+    """Load declarative MCP tool test cases from a JSON file."""
+    resolved = _resolve_path(tests_file)
+    if not os.path.exists(resolved):
+        return [], f"Test file not found: {resolved}"
+
+    try:
+        with open(resolved, "r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], f"Unable to load test file '{resolved}': {exc}"
+
+    if isinstance(payload, list):
+        tests = payload
+    elif isinstance(payload, dict):
+        raw_tests = payload.get("tests", [])
+        tests = raw_tests if isinstance(raw_tests, list) else []
+    else:
+        tests = []
+
+    if not tests:
+        return [], f"No test cases found in {resolved}"
+
+    normalized: list[dict] = []
+    for index, test in enumerate(tests, start=1):
+        if not isinstance(test, dict):
+            continue
+        tool = str(test.get("tool", "")).strip()
+        name = str(test.get("name", f"Test {index}")).strip() or f"Test {index}"
+        params = test.get("params", {})
+        if not tool or not isinstance(params, dict):
+            continue
+        normalized.append(test | {"name": name, "tool": tool, "params": params})
+
+    if not normalized:
+        return [], f"No valid test cases found in {resolved}"
+    return normalized, None
+
+
+def count_custom_entry_steps(entry: dict) -> int:
+    """Return the number of result rows expected for a custom MCP entry."""
+    tests_file = str(entry.get("tests_file", "")).strip()
+    if not tests_file:
+        return 1
+    tests, error = _load_mcp_test_cases(tests_file)
+    return len(tests) if not error else 1
 
 
 async def run_llm_test(
@@ -122,6 +184,37 @@ async def run_llm_test(
         )
 
 
+def _extract_tool_result_text(result: object) -> str:
+    """Best-effort conversion of an MCP tool result to plain text."""
+    content = getattr(result, "content", None)
+    if isinstance(content, list) and content:
+        first = content[0]
+        text = getattr(first, "text", None)
+        if isinstance(text, str):
+            return text
+    return str(result)
+
+
+def _evaluate_mcp_test_response(test: dict, response: str) -> tuple[str, str]:
+    """Evaluate a declarative MCP test response and return verdict + explanation."""
+    is_attack = bool(test.get("is_attack", True))
+    fail_markers = [str(x) for x in test.get("fail_if_any", test.get("compromised_if_any", []))]
+    pass_markers = [str(x) for x in test.get("pass_if_any", test.get("safe_if_any", []))]
+
+    failed = _check_markers(response, fail_markers)
+    passed = _check_markers(response, pass_markers) if pass_markers else False
+
+    if failed:
+        return ("VULNERABLE" if is_attack else "ERROR"), f"Matched fail markers: {fail_markers}"
+    if pass_markers:
+        if passed:
+            return "SAFE", f"Matched pass markers: {pass_markers}"
+        return ("VULNERABLE" if is_attack else "ERROR"), f"Missing pass markers: {pass_markers}"
+    if is_attack:
+        return "ERROR", "Attack test has no pass/fail markers to evaluate."
+    return "SAFE", "No explicit markers provided; non-attack test treated as informational success."
+
+
 async def run_llm_tests(
     llm_config: LLMConfig,
     selected_categories: list[str],
@@ -143,6 +236,118 @@ async def run_llm_tests(
         results.append(result)
         if progress_cb:
             progress_cb(index, len(tests_to_run))
+
+    return results
+
+
+async def run_mcp_test_suite(entry: dict) -> list[AttackResult]:
+    """
+    Run a declarative MCP test suite against a custom MCP server script.
+    Each test case calls one tool and evaluates the response with substring markers.
+    """
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    server_script = _resolve_path(str(entry.get("script", "")).strip())
+    tests_file = str(entry.get("tests_file", "")).strip()
+    category = str(entry.get("category", "Custom MCP Tests")).strip() or "Custom MCP Tests"
+    suite_name = str(entry.get("name", os.path.basename(server_script) or "MCP Suite")).strip()
+    timeout = int(entry.get("timeout", 60))
+
+    if not os.path.exists(server_script):
+        return [
+            AttackResult(
+                llm_name="N/A",
+                attack_category=category,
+                test_name=suite_name,
+                prompt=f"python {server_script}",
+                response="",
+                verdict="ERROR",
+                details=f"Server script not found: {server_script}",
+            )
+        ]
+
+    tests, error = _load_mcp_test_cases(tests_file)
+    if error:
+        return [
+            AttackResult(
+                llm_name="N/A",
+                attack_category=category,
+                test_name=suite_name,
+                prompt=tests_file,
+                response="",
+                verdict="ERROR",
+                details=error,
+            )
+        ]
+
+    results: list[AttackResult] = []
+    server_params = StdioServerParameters(
+        command=sys.executable,
+        args=[server_script],
+    )
+
+    try:
+        async with asyncio.timeout(timeout):
+            async with stdio_client(server_params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+
+                    for test in tests:
+                        prompt = f"{test['tool']}({json.dumps(test['params'], ensure_ascii=False)})"
+                        try:
+                            raw_result = await session.call_tool(test["tool"], test["params"])
+                            response = _extract_tool_result_text(raw_result)
+                            verdict, explanation = _evaluate_mcp_test_response(test, response)
+                            note = str(test.get("note", "")).strip()
+                            details = explanation if not note else f"{note}\n{explanation}"
+                            results.append(
+                                AttackResult(
+                                    llm_name="N/A",
+                                    attack_category=category,
+                                    test_name=f"{suite_name} :: {test['name']}",
+                                    prompt=prompt,
+                                    response=response,
+                                    verdict=verdict,
+                                    details=details,
+                                )
+                            )
+                        except Exception as exc:
+                            results.append(
+                                AttackResult(
+                                    llm_name="N/A",
+                                    attack_category=category,
+                                    test_name=f"{suite_name} :: {test['name']}",
+                                    prompt=prompt,
+                                    response="",
+                                    verdict="ERROR",
+                                    details=f"Tool call failed: {exc}",
+                                )
+                            )
+    except TimeoutError:
+        return [
+            AttackResult(
+                llm_name="N/A",
+                attack_category=category,
+                test_name=suite_name,
+                prompt=f"python {os.path.basename(server_script)}",
+                response="",
+                verdict="ERROR",
+                details=f"Suite timed out after {timeout}s.",
+            )
+        ]
+    except Exception as exc:
+        return [
+            AttackResult(
+                llm_name="N/A",
+                attack_category=category,
+                test_name=suite_name,
+                prompt=f"python {os.path.basename(server_script)}",
+                response="",
+                verdict="ERROR",
+                details=str(exc),
+            )
+        ]
 
     return results
 
