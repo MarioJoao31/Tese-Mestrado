@@ -122,8 +122,9 @@ class SecurityTestApp:
             if not bool(entry.get("enabled", True)):
                 continue
             category = str(entry.get("server_name", "Custom MCP")).strip()
-            tool_name = str(entry.get("tool_name", "custom_tool")).strip()
+            tool_name = str(entry.get("tool_name", "security_suite")).strip()
             script = str(entry.get("script", "")).strip()
+            tests_file = str(entry.get("tests_file", "")).strip()
             timeout = int(entry.get("timeout", 60))
             if not script:
                 continue
@@ -132,6 +133,7 @@ class SecurityTestApp:
                     "category": f"{category} (custom)",
                     "name": tool_name,
                     "script": script,
+                    "tests_file": tests_file,
                     "timeout": timeout,
                 }
             )
@@ -142,11 +144,12 @@ class SecurityTestApp:
         server_name = self.mcp_servers_page.server_vars["server_name"].get().strip()
         tool_name = self.mcp_servers_page.server_vars["tool_name"].get().strip()
         script = self.mcp_servers_page.server_vars["script"].get().strip()
+        tests_file = self.mcp_servers_page.server_vars["tests_file"].get().strip()
         timeout_raw = self.mcp_servers_page.server_vars["timeout"].get().strip()
         enabled_raw = self.mcp_servers_page.server_vars["enabled"].get().strip().lower()
 
         if not server_name or not tool_name or not script:
-            messagebox.showwarning("Validation Error", "Server name, tool name and script path are required.")
+            messagebox.showwarning("Validation Error", "Server name, suite name and script path are required.")
             return
 
         try:
@@ -160,12 +163,14 @@ class SecurityTestApp:
             "server_name": server_name,
             "tool_name": tool_name,
             "script": script,
+            "tests_file": tests_file,
             "timeout": timeout,
             "enabled": enabled,
         }
         self.custom_mcp_servers.append(entry)
         status = "enabled" if enabled else "disabled"
-        self.mcp_servers_page.server_listbox.insert(tk.END, f"{server_name} :: {tool_name} [{status}]")
+        mode = "tests" if tests_file else "demo"
+        self.mcp_servers_page.server_listbox.insert(tk.END, f"{server_name} :: {tool_name} [{mode}, {status}]")
         self._save_configs()
 
     def _update_mcp_server(self) -> None:
@@ -177,11 +182,12 @@ class SecurityTestApp:
         server_name = self.mcp_servers_page.server_vars["server_name"].get().strip()
         tool_name = self.mcp_servers_page.server_vars["tool_name"].get().strip()
         script = self.mcp_servers_page.server_vars["script"].get().strip()
+        tests_file = self.mcp_servers_page.server_vars["tests_file"].get().strip()
         timeout_raw = self.mcp_servers_page.server_vars["timeout"].get().strip()
         enabled_raw = self.mcp_servers_page.server_vars["enabled"].get().strip().lower()
 
         if not server_name or not tool_name or not script:
-            messagebox.showwarning("Validation Error", "Server name, tool name and script path are required.")
+            messagebox.showwarning("Validation Error", "Server name, suite name and script path are required.")
             return
         try:
             timeout = max(1, int(timeout_raw))
@@ -194,14 +200,16 @@ class SecurityTestApp:
             "server_name": server_name,
             "tool_name": tool_name,
             "script": script,
+            "tests_file": tests_file,
             "timeout": timeout,
             "enabled": enabled,
         }
         self.custom_mcp_servers[idx] = entry
 
         status = "enabled" if enabled else "disabled"
+        mode = "tests" if tests_file else "demo"
         self.mcp_servers_page.server_listbox.delete(idx)
-        self.mcp_servers_page.server_listbox.insert(idx, f"{server_name} :: {tool_name} [{status}]")
+        self.mcp_servers_page.server_listbox.insert(idx, f"{server_name} :: {tool_name} [{mode}, {status}]")
         self.mcp_servers_page.server_listbox.selection_set(idx)
         self._save_configs()
 
@@ -222,6 +230,7 @@ class SecurityTestApp:
         self.mcp_servers_page.server_vars["server_name"].set(str(entry.get("server_name", "")))
         self.mcp_servers_page.server_vars["tool_name"].set(str(entry.get("tool_name", "")))
         self.mcp_servers_page.server_vars["script"].set(str(entry.get("script", "")))
+        self.mcp_servers_page.server_vars["tests_file"].set(str(entry.get("tests_file", "")))
         self.mcp_servers_page.server_vars["timeout"].set(str(entry.get("timeout", 60)))
         self.mcp_servers_page.server_vars["enabled"].set("true" if bool(entry.get("enabled", True)) else "false")
 
@@ -415,14 +424,15 @@ class SecurityTestApp:
         self._log_ui(f"  [{result.verdict:>10}]  {test['name']}\n             {preview}\n", tag)
 
     def _on_demo_start(self, demo: dict) -> None:
-        self._log_ui(f"\n{'-' * 60}\n  Demo: {demo['category']}\n{'-' * 60}\n", "demo")
-        self._update_status(f"Running demo: {demo['name']}...")
+        label = "MCP Test Suite" if str(demo.get("tests_file", "")).strip() else "Demo"
+        self._log_ui(f"\n{'-' * 60}\n  {label}: {demo['category']}\n{'-' * 60}\n", "demo")
+        self._update_status(f"Running {label.lower()}: {demo['name']}...")
 
     def _on_demo_done(self, result: AttackResult, demo: dict) -> None:
         self.results.append(result)
         tag = "error" if result.verdict == "ERROR" else "demo"
         preview = result.response[:200].replace("\n", " ")
-        self._log_ui(f"  [{result.verdict:>10}]  {demo['name']}\n             {preview}\n", tag)
+        self._log_ui(f"  [{result.verdict:>10}]  {result.test_name}\n             {preview}\n", tag)
 
     def _log_ui(self, msg: str, tag: str = "") -> None:
         self.root.after(0, lambda m=msg, t=tag: self._append_log(m, t))
@@ -772,16 +782,18 @@ class SecurityTestApp:
                     continue
                 entry: dict[str, str | int | bool] = {
                     "server_name": str(item.get("server_name", "Custom MCP Server")).strip() or "Custom MCP Server",
-                    "tool_name": str(item.get("tool_name", "custom_tool")).strip() or "custom_tool",
+                    "tool_name": str(item.get("tool_name", "security_suite")).strip() or "security_suite",
                     "script": script,
+                    "tests_file": str(item.get("tests_file", "")).strip(),
                     "timeout": int(item.get("timeout", 60)),
                     "enabled": bool(item.get("enabled", True)),
                 }
                 self.custom_mcp_servers.append(entry)
                 status = "enabled" if bool(entry["enabled"]) else "disabled"
+                mode = "tests" if str(entry.get("tests_file", "")).strip() else "demo"
                 self.mcp_servers_page.server_listbox.insert(
                     tk.END,
-                    f"{entry['server_name']} :: {entry['tool_name']} [{status}]",
+                    f"{entry['server_name']} :: {entry['tool_name']} [{mode}, {status}]",
                 )
         self._refresh_analyzer_llm_options()
 

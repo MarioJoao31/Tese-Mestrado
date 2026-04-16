@@ -10,7 +10,8 @@ This project demonstrates **Model Context Protocol (MCP)** usage with a local LL
 mcp/
 |-- requirements.txt
 |-- README.md
-|-- attack_runner.py                # Backend: test definitions + execution helpers
+|-- attack_runner.py                # Backend: execution helpers for attack and demo runs
+|-- attack_definitions.py           # Centralized LLM attack cases and demo catalog
 |-- interface.py                    # Thin GUI entrypoint (launches ui.app)
 |
 |-- build_tools/
@@ -189,7 +190,7 @@ python build_tools/create_exec-dmg.py
 | `demos/07_llm_pentest`         | LLM Pen Testing  | 19 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour, MCP exploit analysis |
 | `demos/08_code_refactoring`    | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
 
-### LLM Attack Test Categories (attack_runner.py)
+### LLM Attack Test Categories (attack_definitions.py)
 
 | Category                 | Tests | Description                                                |
 | ------------------------ | ----- | ---------------------------------------------------------- |

@@ -41,9 +41,9 @@ def print_result(label: str, result: str, expect_blocked: bool = False) -> None:
     """Formata e imprime o resultado de uma chamada a ferramenta."""
     is_error = "erro" in result.lower() or "bloqueado" in result.lower() or "rejeitado" in result.lower()
     if expect_blocked:
-        icon = "✅" if is_error else "⚠️ "
+        icon = "[OK]" if is_error else "[WARN]"
     else:
-        icon = "✅" if not is_error else "ℹ️ "
+        icon = "[OK]" if not is_error else "[INFO]"
     print(f"    {icon} {label}: {result[:120]}")
 
 
@@ -57,7 +57,7 @@ async def demo_memory_poisoning(session: ClientSession) -> None:
     Em sessões futuras, o agente usa estes factos como se fossem verdadeiros.
     """
     print("\n[Cenário 1] Memory Poisoning — Injeção de Factos Falsos")
-    print("─" * 60)
+    print("-" * 60)
 
     # Escrita de entradas legítimas
     print("\n  Fase 1: Escrita de entradas legítimas na memória")
@@ -118,7 +118,7 @@ async def demo_persistent_instruction_injection(session: ClientSession) -> None:
     que seriam aplicadas em todas as sessões futuras.
     """
     print("\n[Cenário 2] Persistent Instruction Injection")
-    print("─" * 60)
+    print("-" * 60)
     print("  Descrição: Tentativa de guardar instruções persistentes na memória")
 
     injection_attempts = [
@@ -165,7 +165,7 @@ async def demo_system_key_tampering(session: ClientSession) -> None:
     Tentativa de modificar chaves do sistema que são read-only.
     """
     print("\n[Cenário 3] System Key Tampering")
-    print("─" * 60)
+    print("-" * 60)
     print("  Descrição: Tentativa de modificar chaves reservadas do sistema")
 
     system_keys = [
@@ -195,7 +195,7 @@ async def demo_memory_exfiltration(session: ClientSession) -> None:
     podendo obter informação sensível guardada por outros utilizadores ou pelo sistema.
     """
     print("\n[Cenário 4] Memory Exfiltration")
-    print("─" * 60)
+    print("-" * 60)
     print("  Descrição: Leitura de toda a memória do agente (reconhecimento)")
 
     # Escreve dados "sensíveis" na memória (simulando outro utilizador legítimo)
@@ -216,8 +216,8 @@ async def demo_memory_exfiltration(session: ClientSession) -> None:
     print(f"    Resultados: {search_result[:200]}")
 
     print(
-        "\n  ⚠️  Problema: a memória não tem isolamento por utilizador.\n"
-        "  ✅  Mitigação: namespace de memória por sessão/utilizador autenticado."
+        "\n  [WARN] Problema: a memoria nao tem isolamento por utilizador.\n"
+        "  [OK] Mitigacao: namespace de memoria por sessao/utilizador autenticado."
     )
 
 
@@ -233,7 +233,7 @@ async def demo_cross_session_contamination(session: ClientSession) -> None:
     Sessão B (vítima):   consulta a memória e recebe informação envenenada
     """
     print("\n[Cenário 5] Cross-Session Memory Contamination")
-    print("─" * 60)
+    print("-" * 60)
 
     # Sessão A: atacante
     print("  [Sessão A — Atacante] Escrever facto falso na memória partilhada:")
@@ -250,7 +250,7 @@ async def demo_cross_session_contamination(session: ClientSession) -> None:
     try:
         data = json.loads(memory)
         for k, v in data.items():
-            print(f"    ⚠️  Agente responde com facto envenenado: '{v.get('value', '')}'")
+            print(f"    [WARN] Agente responde com facto envenenado: '{v.get('value', '')}'")
             print(f"    Fonte: {v.get('source', 'desconhecida')} | Timestamp: {v.get('timestamp', '')}")
     except json.JSONDecodeError:
         print(f"    {memory}")
@@ -268,7 +268,7 @@ async def demo_cross_session_contamination(session: ClientSession) -> None:
 async def show_audit(session: ClientSession) -> None:
     """Mostra o audit log de todas as operações de memória."""
     print("\n" + "=" * 70)
-    print("AUDIT LOG — Operações de memória desta sessão:")
+    print("AUDIT LOG - Operacoes de memoria desta sessao:")
     print("=" * 70)
     audit_raw = await call_tool(session, "memory_audit", {})
     try:

@@ -116,14 +116,14 @@ async def main() -> None:
     exfil_log      = os.path.join(script_dir, "exfil_simulation.log")
 
     print("=" * 70)
-    print("DEMO: SUPPLY CHAIN ATTACK — Substituição de Servidor MCP")
+    print("DEMO: SUPPLY CHAIN ATTACK - Substituicao de Servidor MCP")
     print("=" * 70)
 
     # -----------------------------------------------------------------------
     # Parte 1: Calcular hashes de referência (estado limpo)
     # -----------------------------------------------------------------------
     print("\n[1] Verificação de Integridade dos Servidores")
-    print("─" * 60)
+    print("-" * 60)
 
     legit_hash    = compute_server_hash(legit_server)
     malicious_hash = compute_server_hash(malicious_server)
@@ -132,15 +132,15 @@ async def main() -> None:
     print(f"  Hash servidor malicioso:  {malicious_hash[:32]}...")
     print(f"  Hashes iguais? {legit_hash == malicious_hash}")
     print(
-        "  → Se o programador armazenar o hash do servidor legítimo,\n"
-        "    pode detectar substituições antes de executar."
+        "  -> Se o programador armazenar o hash do servidor legitimo,\n"
+        "    pode detectar substituicoes antes de executar."
     )
 
     # -----------------------------------------------------------------------
     # Parte 2: Usar o servidor legítimo
     # -----------------------------------------------------------------------
-    print("\n[2] Servidor LEGÍTIMO — comportamento normal")
-    print("─" * 60)
+    print("\n[2] Servidor LEGITIMO - comportamento normal")
+    print("-" * 60)
 
     legit_results = await run_scenario(legit_server, "Legítimo")
     print(f"  Ferramentas: {legit_results['tools']}")
@@ -152,14 +152,14 @@ async def main() -> None:
     legit_exfil_exists = os.path.exists(exfil_log)
     print(f"  Log de exfiltração criado? {legit_exfil_exists}")
     if not legit_exfil_exists:
-        print("  ✅ Nenhuma exfiltração detectada — servidor legítimo")
+        print("  [OK] Nenhuma exfiltracao detectada - servidor legitimo")
 
     # -----------------------------------------------------------------------
     # Parte 3: Usar o servidor malicioso (mesma interface)
     # -----------------------------------------------------------------------
-    print("\n[3] Servidor MALICIOSO — interface idêntica, backdoor activo")
-    print("─" * 60)
-    print("  ⚠️  O atacante substituiu o servidor MCP pelo malicioso.")
+    print("\n[3] Servidor MALICIOSO - interface identica, backdoor activo")
+    print("-" * 60)
+    print("  [WARN] O atacante substituiu o servidor MCP pelo malicioso.")
     print("  O agente não detecta qualquer diferença na interface.\n")
 
     # Remover log anterior se existir
@@ -175,11 +175,11 @@ async def main() -> None:
     # -----------------------------------------------------------------------
     # Parte 4: Mostrar o backdoor em acção
     # -----------------------------------------------------------------------
-    print("\n[4] Backdoor em Acção — O que o servidor malicioso fez em background")
-    print("─" * 60)
+    print("\n[4] Backdoor em Accao - O que o servidor malicioso fez em background")
+    print("-" * 60)
 
     if os.path.exists(exfil_log):
-        print("  ⚠️  Log de exfiltração CRIADO pelo servidor malicioso!")
+        print("  [WARN] Log de exfiltracao CRIADO pelo servidor malicioso!")
         print("  Dados que seriam exfiltrados:\n")
         with open(exfil_log, "r") as fh:
             for line in fh:
@@ -198,8 +198,8 @@ async def main() -> None:
     # -----------------------------------------------------------------------
     # Parte 5: Comparação de resultados visíveis
     # -----------------------------------------------------------------------
-    print("\n[5] Comparação — O agente não detecta diferença na interface")
-    print("─" * 60)
+    print("\n[5] Comparacao - O agente nao detecta diferenca na interface")
+    print("-" * 60)
 
     comparisons = [
         ("Ferramentas",  legit_results["tools"],        malicious_results["tools"]),
@@ -209,7 +209,7 @@ async def main() -> None:
 
     for label, legit_val, mal_val in comparisons:
         same = str(legit_val) == str(mal_val)
-        icon = "✅ Idêntico" if same else "⚠️  Diferente"
+        icon = "[OK] Identico" if same else "[WARN] Diferente"
         print(f"  {label}: {icon}")
 
     print(
@@ -221,23 +221,23 @@ async def main() -> None:
     # Parte 6: Mitigações
     # -----------------------------------------------------------------------
     print("\n" + "=" * 70)
-    print("MITIGAÇÕES PARA SUPPLY CHAIN ATTACKS")
+    print("MITIGACOES PARA SUPPLY CHAIN ATTACKS")
     print("=" * 70)
 
-    print("\n  1. Hash pinning — verificar o hash do servidor antes de usar:")
+    print("\n  1. Hash pinning - verificar o hash do servidor antes de usar:")
     print(f"     Hash esperado (legítimo): {legit_hash}")
     print(f"     Hash actual (malicioso):  {malicious_hash}")
     print(f"     Corresponde? {verify_server_integrity(malicious_server, legit_hash)}")
-    print("     → Com hash pinning, o servidor malicioso seria REJEITADO\n")
+    print("     -> Com hash pinning, o servidor malicioso seria REJEITADO\n")
 
     mitigacoes = [
-        "2. Code signing — assinar servidores MCP com chave privada (verificar assinatura)",
-        "3. Dependency pinning — fixar versões exactas no requirements.txt com hashes",
-        "4. Sandboxing — executar servidores MCP em containers sem acesso à rede",
-        "5. Least privilege — servidores MCP não têm acesso a credenciais ou rede",
-        "6. Behavioural monitoring — detectar chamadas de rede não esperadas",
-        "7. Supply chain audit — auditar regularmente as dependências com ferramentas como 'pip-audit'",
-        "8. Reproducible builds — verificar que o binário corresponde ao código fonte",
+        "2. Code signing - assinar servidores MCP com chave privada (verificar assinatura)",
+        "3. Dependency pinning - fixar versoes exactas no requirements.txt com hashes",
+        "4. Sandboxing - executar servidores MCP em containers sem acesso a rede",
+        "5. Least privilege - servidores MCP nao tem acesso a credenciais ou rede",
+        "6. Behavioural monitoring - detectar chamadas de rede nao esperadas",
+        "7. Supply chain audit - auditar regularmente as dependencias com ferramentas como 'pip-audit'",
+        "8. Reproducible builds - verificar que o binario corresponde ao codigo fonte",
     ]
     for m in mitigacoes:
         print(f"  {m}")

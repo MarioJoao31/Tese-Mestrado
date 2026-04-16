@@ -188,13 +188,13 @@ Mar  9 10:02:01 server sshd[1300]: Accepted password for alice from 10.0.0.2 por
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("╔══════════════════════════════════════════════════════╗")
-    print("║     06 · Cybersecurity Tools – Demo                 ║")
-    print("╚══════════════════════════════════════════════════════╝")
+    print("======================================================")
+    print("     06 - Cybersecurity Tools - Demo")
+    print("======================================================")
 
     demo_network_tools()
     demo_vulnerability_tools()
     demo_crypto_tools()
     demo_log_analysis()
 
-    print("\n✅  Demo complete.")
+    print("\n[OK] Demo complete.")

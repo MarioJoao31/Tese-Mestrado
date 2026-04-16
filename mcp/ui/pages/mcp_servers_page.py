@@ -23,8 +23,9 @@ class McpServersPage:
 
         self.server_vars: dict[str, tk.StringVar] = {
             "server_name": tk.StringVar(value="Custom MCP Server"),
-            "tool_name": tk.StringVar(value="custom_tool"),
+            "tool_name": tk.StringVar(value="security_suite"),
             "script": tk.StringVar(value=""),
+            "tests_file": tk.StringVar(value=""),
             "timeout": tk.StringVar(value="60"),
             "enabled": tk.StringVar(value="true"),
         }
@@ -54,25 +55,34 @@ class McpServersPage:
         server_entry.grid(row=0, column=1, sticky="ew", pady=2)
         attach_tooltip(server_entry, "Display name for this MCP server grouping in the UI.")
 
-        ttk.Label(form_frame, text="Tool name:").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Label(form_frame, text="Suite name:").grid(row=1, column=0, sticky="w", padx=(0, 6), pady=2)
         tool_entry = ttk.Entry(form_frame, textvariable=self.server_vars["tool_name"])
         tool_entry.grid(row=1, column=1, sticky="ew", pady=2)
-        attach_tooltip(tool_entry, "Tool identifier to show/run for this script entry.")
+        attach_tooltip(tool_entry, "Display name for this custom MCP test suite.")
 
-        ttk.Label(form_frame, text="Demo script path:").grid(row=2, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Label(form_frame, text="Server script path:").grid(row=2, column=0, sticky="w", padx=(0, 6), pady=2)
         script_entry = ttk.Entry(form_frame, textvariable=self.server_vars["script"])
         script_entry.grid(row=2, column=1, sticky="ew", pady=2)
-        attach_tooltip(script_entry, "Absolute or relative path to a Python demo script (.py) to execute.")
+        attach_tooltip(script_entry, "Absolute or relative path to a Python MCP server script (.py) to execute.")
         ttk.Button(form_frame, text="Browse", command=self._browse_script).grid(row=2, column=2, padx=(6, 0), pady=2)
 
-        ttk.Label(form_frame, text="Timeout (sec):").grid(row=3, column=0, sticky="w", padx=(0, 6), pady=2)
-        timeout_entry = ttk.Entry(form_frame, textvariable=self.server_vars["timeout"])
-        timeout_entry.grid(row=3, column=1, sticky="ew", pady=2)
-        attach_tooltip(timeout_entry, "Maximum run time in seconds before the demo script is stopped.")
+        ttk.Label(form_frame, text="Tests JSON path:").grid(row=3, column=0, sticky="w", padx=(0, 6), pady=2)
+        tests_entry = ttk.Entry(form_frame, textvariable=self.server_vars["tests_file"])
+        tests_entry.grid(row=3, column=1, sticky="ew", pady=2)
+        attach_tooltip(
+            tests_entry,
+            "Optional JSON file with declarative MCP tool tests. If blank, this entry runs as a raw demo script.",
+        )
+        ttk.Button(form_frame, text="Browse", command=self._browse_tests_file).grid(row=3, column=2, padx=(6, 0), pady=2)
 
-        ttk.Label(form_frame, text="Enabled (true/false):").grid(row=4, column=0, sticky="w", padx=(0, 6), pady=2)
+        ttk.Label(form_frame, text="Timeout (sec):").grid(row=4, column=0, sticky="w", padx=(0, 6), pady=2)
+        timeout_entry = ttk.Entry(form_frame, textvariable=self.server_vars["timeout"])
+        timeout_entry.grid(row=4, column=1, sticky="ew", pady=2)
+        attach_tooltip(timeout_entry, "Maximum run time in seconds before the suite or demo is stopped.")
+
+        ttk.Label(form_frame, text="Enabled (true/false):").grid(row=5, column=0, sticky="w", padx=(0, 6), pady=2)
         enabled_entry = ttk.Entry(form_frame, textvariable=self.server_vars["enabled"])
-        enabled_entry.grid(row=4, column=1, sticky="ew", pady=2)
+        enabled_entry.grid(row=5, column=1, sticky="ew", pady=2)
         attach_tooltip(enabled_entry, "Set true/false (also accepts 1/0, yes/no, on/off) to include or skip this tool.")
 
         btn_row = ttk.Frame(container)
@@ -84,8 +94,8 @@ class McpServersPage:
         ttk.Label(
             container,
             text=(
-                "Each entry represents one external MCP demo tool script.\n"
-                "When enabled, it will run together with other demos."
+                "Each entry can either run a raw demo script or a real MCP vulnerability test suite.\n"
+                "Provide a server script plus a tests JSON file to score tool calls as SAFE/VULNERABLE/ERROR."
             ),
             foreground="gray",
             justify=tk.LEFT,
@@ -93,8 +103,16 @@ class McpServersPage:
 
     def _browse_script(self) -> None:
         path = filedialog.askopenfilename(
-            title="Select demo script",
+            title="Select MCP server script",
             filetypes=[("Python files", "*.py"), ("All files", "*.*")],
         )
         if path:
             self.server_vars["script"].set(path)
+
+    def _browse_tests_file(self) -> None:
+        path = filedialog.askopenfilename(
+            title="Select MCP tests JSON",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if path:
+            self.server_vars["tests_file"].set(path)
