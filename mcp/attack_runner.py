@@ -446,42 +446,43 @@ LLM_ATTACK_TESTS: list[dict] = [
 # ---------------------------------------------------------------------------
 
 MCP_DIR = os.path.dirname(os.path.abspath(__file__))
+DEMOS_DIR = os.path.join(MCP_DIR, "demos")
 
 DEMO_SCRIPTS: list[dict] = [
     {
         "category": "Tool Misuse Demo",
-        "name": "03_tool_misuse/demo.py",
-        "script": os.path.join(MCP_DIR, "03_tool_misuse", "demo.py"),
+        "name": "demos/03_tool_misuse/demo.py",
+        "script": os.path.join(DEMOS_DIR, "03_tool_misuse", "demo.py"),
         "timeout": 60,
     },
     {
         "category": "Memory Attacks Demo",
-        "name": "04_memory_attacks/demo.py",
-        "script": os.path.join(MCP_DIR, "04_memory_attacks", "demo.py"),
+        "name": "demos/04_memory_attacks/demo.py",
+        "script": os.path.join(DEMOS_DIR, "04_memory_attacks", "demo.py"),
         "timeout": 60,
     },
     {
         "category": "Supply Chain Demo",
-        "name": "05_supply_chain/demo.py",
-        "script": os.path.join(MCP_DIR, "05_supply_chain", "demo.py"),
+        "name": "demos/05_supply_chain/demo.py",
+        "script": os.path.join(DEMOS_DIR, "05_supply_chain", "demo.py"),
         "timeout": 60,
     },
     {
         "category": "Cybersecurity Tools Demo",
-        "name": "06_cybersecurity_tools/demo.py",
-        "script": os.path.join(MCP_DIR, "06_cybersecurity_tools", "demo.py"),
+        "name": "demos/06_cybersecurity_tools/demo.py",
+        "script": os.path.join(DEMOS_DIR, "06_cybersecurity_tools", "demo.py"),
         "timeout": 90,
     },
     {
         "category": "LLM Pen Testing Demo",
-        "name": "07_llm_pentest/demo.py",
-        "script": os.path.join(MCP_DIR, "07_llm_pentest", "demo.py"),
+        "name": "demos/07_llm_pentest/demo.py",
+        "script": os.path.join(DEMOS_DIR, "07_llm_pentest", "demo.py"),
         "timeout": 60,
     },
     {
         "category": "Code Refactoring Demo",
-        "name": "08_code_refactoring/demo.py",
-        "script": os.path.join(MCP_DIR, "08_code_refactoring", "demo.py"),
+        "name": "demos/08_code_refactoring/demo.py",
+        "script": os.path.join(DEMOS_DIR, "08_code_refactoring", "demo.py"),
         "timeout": 60,
     },
 ]

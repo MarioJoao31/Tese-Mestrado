@@ -13,6 +13,11 @@ mcp/
 |-- attack_runner.py                # Backend: test definitions + execution helpers
 |-- interface.py                    # Thin GUI entrypoint (launches ui.app)
 |
+|-- build_tools/
+|   |-- create_exec-dmg.py          # Build executable and macOS DMG
+|   |-- interface.spec              # PyInstaller spec for interface build
+|   `-- mcp_dashboard.spec          # PyInstaller spec for packaged dashboard
+|
 |-- ui/
 |   |-- app.py                      # Main Tk controller (wires pages + services)
 |   |-- pages/
@@ -31,36 +36,36 @@ mcp/
 |
 |-- utils/
 |   |-- mario_video_intro.py        # Manim intro scene source
-|   `-- create_exec-dmg.py          # Build executable and macOS DMG
 |
 |-- data/                           # Created automatically at runtime
 |   |-- configs_db.json             # Persisted UI/model configs (auto-loaded)
 |   `-- tests_db.json               # Persisted test run history (write-only on startup)
 |
-|-- 01_basic_mcp/                   # Basic MCP server + LangChain client
-|-- 02_prompt_injection/            # Direct and indirect prompt injection
-|-- 03_tool_misuse/                 # Tool misuse and confused deputy
-|-- 04_memory_attacks/              # Persistent memory poisoning
-|-- 05_supply_chain/                # Malicious server substitution
-|-- 06_cybersecurity_tools/         # Network, vulnerability, crypto, log analysis tools
-|   `-- tools/
-|       |-- network_tools.py        # DNS, port scan, HTTP headers, SSL, WHOIS
-|       |-- vulnerability_tools.py  # CVE, dependencies, CVSS, OWASP Top-10
-|       |-- crypto_tools.py         # Hash analysis, password check, token generation
-|       `-- log_analysis_tools.py   # Access log, brute force, SQLi detection
-|-- 07_llm_pentest/                 # LLM penetration testing tools
-|   `-- tools/
-|       |-- prompt_fuzzer.py        # Adversarial prompts, injection classifier, system prompt audit
-|       |-- safety_evaluator.py     # Safety scoring, PII detection, harm classification
-|       |-- adversarial_tools.py    # Adversarial variants, attack surface, multi-turn attacks
-|       |-- model_behavior_tools.py # Response profiling, bias, hallucination, refusal consistency
-|       `-- mcp_exploit_tools.py    # MCP tool weak-point audit, exploit tests, risky output checks
-`-- 08_code_refactoring/            # Code analysis and refactoring tools
-    `-- tools/
-        |-- static_analysis_tools.py   # Quality score, smells, dead code, security patterns
-        |-- complexity_tools.py        # Cyclomatic complexity, metrics, nesting, coupling
-        |-- pattern_detection_tools.py # Design patterns, anti-patterns, SOLID, duplication
-        `-- refactoring_tools.py       # Refactoring suggestions, naming, conditionals
+|-- demos/
+|   |-- 01_basic_mcp/               # Basic MCP server + LangChain client
+|   |-- 02_prompt_injection/        # Direct and indirect prompt injection
+|   |-- 03_tool_misuse/             # Tool misuse and confused deputy
+|   |-- 04_memory_attacks/          # Persistent memory poisoning
+|   |-- 05_supply_chain/            # Malicious server substitution
+|   |-- 06_cybersecurity_tools/     # Network, vulnerability, crypto, log analysis tools
+|   |   `-- tools/
+|   |       |-- network_tools.py        # DNS, port scan, HTTP headers, SSL, WHOIS
+|   |       |-- vulnerability_tools.py  # CVE, dependencies, CVSS, OWASP Top-10
+|   |       |-- crypto_tools.py         # Hash analysis, password check, token generation
+|   |       `-- log_analysis_tools.py   # Access log, brute force, SQLi detection
+|   |-- 07_llm_pentest/             # LLM penetration testing tools
+|   |   `-- tools/
+|   |       |-- prompt_fuzzer.py        # Adversarial prompts, injection classifier, system prompt audit
+|   |       |-- safety_evaluator.py     # Safety scoring, PII detection, harm classification
+|   |       |-- adversarial_tools.py    # Adversarial variants, attack surface, multi-turn attacks
+|   |       |-- model_behavior_tools.py # Response profiling, bias, hallucination, refusal consistency
+|   |       `-- mcp_exploit_tools.py    # MCP tool weak-point audit, exploit tests, risky output checks
+|   `-- 08_code_refactoring/        # Code analysis and refactoring tools
+|       `-- tools/
+|           |-- static_analysis_tools.py   # Quality score, smells, dead code, security patterns
+|           |-- complexity_tools.py        # Cyclomatic complexity, metrics, nesting, coupling
+|           |-- pattern_detection_tools.py # Design patterns, anti-patterns, SOLID, duplication
+|           `-- refactoring_tools.py       # Refactoring suggestions, naming, conditionals
 ```
 
 ---
@@ -144,14 +149,14 @@ python mcp/attack_runner.py
 
 ```bash
 # Security attack demonstrations
-python mcp/03_tool_misuse/demo.py
-python mcp/04_memory_attacks/demo.py
-python mcp/05_supply_chain/demo.py
+python mcp/demos/03_tool_misuse/demo.py
+python mcp/demos/04_memory_attacks/demo.py
+python mcp/demos/05_supply_chain/demo.py
 
 # New tool modules
-python mcp/06_cybersecurity_tools/demo.py
-python mcp/07_llm_pentest/demo.py
-python mcp/08_code_refactoring/demo.py
+python mcp/demos/06_cybersecurity_tools/demo.py
+python mcp/demos/07_llm_pentest/demo.py
+python mcp/demos/08_code_refactoring/demo.py
 ```
 
 ### 4. Create executable and DMG (macOS)
@@ -159,7 +164,7 @@ python mcp/08_code_refactoring/demo.py
 From inside `mcp/`:
 
 ```bash
-python utils/create_exec-dmg.py
+python build_tools/create_exec-dmg.py
 ```
 
 ---
@@ -170,19 +175,19 @@ python utils/create_exec-dmg.py
 
 | Folder                | Security Topic   | Description                                                           |
 | --------------------- | ---------------- | --------------------------------------------------------------------- |
-| `01_basic_mcp`        | Basics           | Intro MCP server + LangChain client with 5 security-aware tools       |
-| `02_prompt_injection` | Prompt Injection | Direct and indirect prompt-injection demos                            |
-| `03_tool_misuse`      | Tool Misuse      | Confused-deputy, path traversal, SQL injection, exfiltration patterns |
-| `04_memory_attacks`   | Memory Attacks   | Persistent-memory poisoning and cross-session contamination           |
-| `05_supply_chain`     | Supply Chain     | Legitimate vs malicious MCP server substitution with backdoors        |
+| `demos/01_basic_mcp`        | Basics           | Intro MCP server + LangChain client with 5 security-aware tools       |
+| `demos/02_prompt_injection` | Prompt Injection | Direct and indirect prompt-injection demos                            |
+| `demos/03_tool_misuse`      | Tool Misuse      | Confused-deputy, path traversal, SQL injection, exfiltration patterns |
+| `demos/04_memory_attacks`   | Memory Attacks   | Persistent-memory poisoning and cross-session contamination           |
+| `demos/05_supply_chain`     | Supply Chain     | Legitimate vs malicious MCP server substitution with backdoors        |
 
 ### New Tool Modules (06–08)
 
 | Folder                   | Category         | Tools                                                                             |
 | ------------------------ | ---------------- | --------------------------------------------------------------------------------- |
-| `06_cybersecurity_tools` | Cybersecurity    | 20 tools: network analysis, CVE/CVSS, cryptography, log analysis                  |
-| `07_llm_pentest`         | LLM Pen Testing  | 19 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour, MCP exploit analysis |
-| `08_code_refactoring`    | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
+| `demos/06_cybersecurity_tools` | Cybersecurity    | 20 tools: network analysis, CVE/CVSS, cryptography, log analysis                  |
+| `demos/07_llm_pentest`         | LLM Pen Testing  | 19 tools: prompt fuzzing, safety evaluation, adversarial testing, model behaviour, MCP exploit analysis |
+| `demos/08_code_refactoring`    | Code Refactoring | 16 tools: static analysis, complexity, pattern detection, refactoring suggestions |
 
 ### LLM Attack Test Categories (attack_runner.py)
 

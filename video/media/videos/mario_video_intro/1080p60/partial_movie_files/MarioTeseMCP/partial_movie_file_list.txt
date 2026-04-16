@@ -1,0 +1,9 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2632854583_4021401819_223132457.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_1771410523_1898083188.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_4286681168_3836284130.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_3727989522_1675563509.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_1654072134_785808000.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_222197677_785808000.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_2514011427_1590570700.mp4'
+file 'file:/Users/mariopinto/Desktop/repos/Tese-Mestrado/mcp/utils/media/videos/mario_video_intro/1080p60/partial_movie_files/MarioTeseMCP/2513317995_3814648947_1121784235.mp4'

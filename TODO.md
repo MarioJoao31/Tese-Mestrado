@@ -1,0 +1,5 @@
+**TODO**
+
+- [ ] a parte do codigo para correr os ficheiros demos é para retirar (tenho que alterar esta logica para testar num mcp server, por exemplo neste momento nos só estamos a testar as falhas num ficheiro demo e eu quero criar uma logica em que se consiga aplicar num servidor mcp )
+- [ ] a tab MCP Server so adiciona um ficheiro para correr e pede o nome da tool e isso (esta errado, eu quero a logica de ao adicionar o mcp server ele automaticamente tem que reconhecer todas as tools disponiveis nesse servidor e depois o user escolhe quais quer correr, mas ainda não sei como adicionar o server mcp, se o faço atraves de ficheiros estaticos ou de executavel)
+- [ ] na tab MCP Analyser tenho que adicionar uma knowledge base que contem partes de codigo bons e maus para o llm identificar e depois tenho que criar a logica de comparar o codigo do user com a knowledge base e dar uma resposta (ainda não sei como fazer isso, se faço uma base de dados ou se faço um ficheiro estatico)

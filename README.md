@@ -20,46 +20,75 @@ cd mcp
 pip install -r requirements.txt
 
 # Launch the GUI test framework
-python interface.py
+**python interface.py**
 
 # Or run any standalone demo (no LLM required)
-python 06_cybersecurity_tools/demo.py
-python 07_llm_pentest/demo.py
-python 08_code_refactoring/demo.py
+python demos/06_cybersecurity_tools/demo.py
+python demos/07_llm_pentest/demo.py
+python demos/08_code_refactoring/demo.py
 ```
 
 ## Repository Structure
 
+```text
+.
+├── README.md                    # Main project overview (this file)
+├── LICENSE                      # Repository license
+└── mcp/                         # Main application, demos, servers, UI, and assets
+    ├── README.md                # MCP-specific usage and module documentation
+    ├── requirements.txt         # Python dependencies
+    ├── interface.py             # GUI entry point
+    ├── attack_runner.py         # Attack test definitions and execution helpers
+    ├── demos/                   # All MCP demos and tool-suite modules
+    │   ├── 01_basic_mcp/        # Introductory MCP server + sample client
+    │   ├── 02_prompt_injection/ # Direct and indirect prompt injection demos
+    │   ├── 03_tool_misuse/      # Tool misuse and confused deputy scenarios
+    │   ├── 04_memory_attacks/   # Persistent memory poisoning demonstrations
+    │   ├── 05_supply_chain/     # Legitimate vs malicious MCP server scenarios
+    │   ├── 06_cybersecurity_tools/ # Cybersecurity analysis tool suite
+    │   ├── 07_llm_pentest/      # LLM red-teaming and pentest tool suite
+    │   └── 08_code_refactoring/ # Static analysis and refactoring tools
+    ├── ui/                      # Tkinter desktop interface
+    ├── data/                    # Runtime data such as saved configs and test exports
+    ├── assets/                  # Application icons and packaged UI assets
+    ├── media/                   # Demo media used by the interface and thesis material
+    ├── build_tools/             # Scripts and spec files for executable packaging
+    ├── utils/                   # Helper scripts for intro video generation
+    ├── build/                   # Generated build output
+    ├── dist/                    # Packaged distributables
+    └── .venv/                   # Local virtual environment (developer-specific)
 ```
-mcp/
-├── 01_basic_mcp/           # Basic MCP server with 5 security-aware tools
-├── 02_prompt_injection/    # Direct and indirect prompt injection demos
-├── 03_tool_misuse/         # Confused deputy, path traversal, SQL injection
-├── 04_memory_attacks/      # Memory poisoning and cross-session contamination
-├── 05_supply_chain/        # Malicious server substitution with backdoors
-├── 06_cybersecurity_tools/ # 20 cybersecurity analysis tools (4 modules)
-│   └── tools/
-│       ├── network_tools.py         # DNS, port scan, headers, SSL, WHOIS
-│       ├── vulnerability_tools.py   # CVE, CVSS, OWASP Top-10, dep audit
-│       ├── crypto_tools.py          # Hash, password, tokens, encoding
-│       └── log_analysis_tools.py    # Access log, brute force, SQLi
-├── 07_llm_pentest/         # 16 LLM pen testing tools (4 modules)
-│   └── tools/
-│       ├── prompt_fuzzer.py         # Fuzz templates, injection classifier
-│       ├── safety_evaluator.py      # PII, harmful content, output alignment
-│       ├── adversarial_tools.py     # Attack surface, multi-turn simulation
-│       └── model_behavior_tools.py  # Bias, hallucination, refusal metrics
-├── 08_code_refactoring/    # 16 code quality tools (4 modules)
-│   └── tools/
-│       ├── static_analysis_tools.py # Quality score, smells, security
-│       ├── complexity_tools.py      # Cyclomatic, metrics, nesting
-│       ├── pattern_detection_tools.py # GoF, anti-patterns, SOLID
-│       └── refactoring_tools.py     # Suggestions, naming, conditionals
-├── ui/                     # Tkinter GUI (config, run, results tabs)
-├── attack_runner.py        # 20+ LLM attack test cases + demo runner
-├── interface.py            # GUI entry point
-└── requirements.txt        # Python dependencies
-```
+
+### What each main folder contains
+
+| Path | Purpose |
+| --- | --- |
+| `mcp/demos/01_basic_mcp` | Minimal MCP example used to introduce the protocol, with a simple server, client, and sample data. |
+| `mcp/demos/02_prompt_injection` | Demonstrations of direct and indirect prompt injection attacks against tool-using LLM workflows. |
+| `mcp/demos/03_tool_misuse` | Scenarios focused on confused deputy problems, unsafe tool execution, and workspace misuse. |
+| `mcp/demos/04_memory_attacks` | Examples of memory poisoning and cross-session contamination in agent-style systems. |
+| `mcp/demos/05_supply_chain` | Supply-chain attack demonstrations comparing trusted and malicious MCP servers. |
+| `mcp/demos/06_cybersecurity_tools` | Security-oriented MCP server and demo scripts for network checks, vulnerability analysis, cryptography helpers, and log analysis. |
+| `mcp/demos/07_llm_pentest` | LLM security testing tools for prompt fuzzing, adversarial testing, safety evaluation, model behaviour checks, and MCP exploit analysis. |
+| `mcp/demos/08_code_refactoring` | Code quality and refactoring tools covering static analysis, complexity, design patterns, anti-patterns, and refactoring suggestions. |
+| `mcp/ui` | Desktop GUI built with Tkinter. It contains the main app controller, page components, and supporting services. |
+| `mcp/ui/pages` | Individual interface tabs such as configuration, test execution, results, MCP server inspection, and analyzer views. |
+| `mcp/ui/services` | Backend helpers used by the GUI, including JSON persistence, Excel export, environment loading, MCP analysis, and test orchestration. |
+| `mcp/data` | Persistent runtime data, including saved model configurations, stored test definitions, and exported `.xlsx` results. |
+| `mcp/assets` | Static assets packaged with the application, such as icons. |
+| `mcp/media` | Images, text snippets, and videos used by demos, the GUI, or thesis presentation material. |
+| `mcp/utils` | Utility scripts for generating the intro animation and building macOS distributables. |
+| `mcp/build` | Intermediate files created during packaging/build steps. |
+| `mcp/dist` | Final packaged application artifacts, including the macOS app bundle. |
+| `mcp/.venv` | Local Python virtual environment; useful for development but usually not part of the documented project logic. |
+
+### Tool module breakdown
+
+| Module | Internal structure |
+| --- | --- |
+| `mcp/demos/06_cybersecurity_tools/tools` | `network_tools.py`, `vulnerability_tools.py`, `crypto_tools.py`, `log_analysis_tools.py` |
+| `mcp/demos/07_llm_pentest/tools` | `prompt_fuzzer.py`, `safety_evaluator.py`, `adversarial_tools.py`, `model_behavior_tools.py`, `mcp_exploit_tools.py` |
+| `mcp/demos/08_code_refactoring/tools` | `static_analysis_tools.py`, `complexity_tools.py`, `pattern_detection_tools.py`, `refactoring_tools.py` |
 
 ## Key Features
 
