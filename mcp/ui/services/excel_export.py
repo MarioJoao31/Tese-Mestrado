@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from typing import Any
 
 from attack_runner import AttackResult
 
@@ -24,7 +25,6 @@ def export_results_to_excel(results: list[AttackResult], filepath: str) -> None:
     green = PatternFill("solid", fgColor="D4EDDA")
     red = PatternFill("solid", fgColor="F8D7DA")
     orange = PatternFill("solid", fgColor="FFF3CD")
-    purple = PatternFill("solid", fgColor="E2D9F3")
     header = PatternFill("solid", fgColor="343A40")
 
     bold_white = Font(bold=True, color="FFFFFF")
@@ -38,7 +38,7 @@ def export_results_to_excel(results: list[AttackResult], filepath: str) -> None:
         bottom=Side(style="thin", color="CCCCCC"),
     )
 
-    def style_header_row(ws: openpyxl.worksheet.worksheet.Worksheet, row: int, ncols: int) -> None:
+    def style_header_row(ws: Any, row: int, ncols: int) -> None:
         for col in range(1, ncols + 1):
             cell = ws.cell(row=row, column=col)
             cell.fill = header
@@ -51,15 +51,16 @@ def export_results_to_excel(results: list[AttackResult], filepath: str) -> None:
             "SAFE": green,
             "VULNERABLE": red,
             "ERROR": orange,
-            "DEMO": purple,
         }.get(verdict)
 
-    def auto_col_width(ws: openpyxl.worksheet.worksheet.Worksheet, max_w: int = 60) -> None:
+    def auto_col_width(ws: Any, max_w: int = 60) -> None:
         for col_cells in ws.columns:
             length = max((len(str(c.value or "")) for c in col_cells), default=10)
             ws.column_dimensions[get_column_letter(col_cells[0].column)].width = min(length + 4, max_w)
 
     ws_all = wb.active
+    if ws_all is None:
+        ws_all = wb.create_sheet("All Results")
     ws_all.title = "All Results"
 
     headers = ["LLM", "Category", "Test Name", "Verdict", "Prompt", "Response", "Details", "Timestamp"]

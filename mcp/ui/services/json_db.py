@@ -30,7 +30,7 @@ class JsonDbService:
         self,
         llm_configs: list[LLMConfig],
         selected_attack_categories: list[str],
-        selected_demo_categories: list[str],
+        selected_mcp_entries: list[str],
         custom_prompt: str,
         custom_mcp_servers: list[dict],
     ) -> None:
@@ -38,7 +38,7 @@ class JsonDbService:
         payload = {
             "llm_configs": [asdict(cfg) for cfg in llm_configs],
             "selected_attack_categories": selected_attack_categories,
-            "selected_demo_categories": selected_demo_categories,
+            "selected_mcp_entries": selected_mcp_entries,
             "custom_prompt": custom_prompt,
             "custom_mcp_servers": custom_mcp_servers,
         }
@@ -50,7 +50,7 @@ class JsonDbService:
         run_started_at: str,
         llm_configs: list[LLMConfig],
         selected_attack_categories: list[str],
-        selected_demo_categories: list[str],
+        selected_mcp_entries: list[str],
         results: list[AttackResult],
     ) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,7 @@ class JsonDbService:
             "run_finished_at": datetime.now().isoformat(),
             "llm_configs": [asdict(cfg) for cfg in llm_configs],
             "selected_attack_categories": selected_attack_categories,
-            "selected_demo_categories": selected_demo_categories,
+            "selected_mcp_entries": selected_mcp_entries,
             "results": [asdict(result) for result in results],
         }
         runs.append(run_record)

@@ -18,7 +18,7 @@ class RunPage:
         self._on_clear_log = on_clear_log
 
         self.progress_var = tk.DoubleVar()
-        self.status_var = tk.StringVar(value="Ready - add LLMs and press Run.")
+        self.status_var = tk.StringVar(value="Ready - add LLM tests and/or MCP suites, then press Run.")
         self.run_btn: ttk.Button
         self.stop_btn: ttk.Button
         self.log_text: scrolledtext.ScrolledText

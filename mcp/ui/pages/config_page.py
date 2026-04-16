@@ -3,7 +3,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from attack_runner import DEMO_SCRIPTS, get_llm_categories
+from attack_runner import get_llm_categories
 from ui.services.tooltip import attach_tooltip
 
 
@@ -28,7 +28,6 @@ class ConfigPage:
 
         self.llm_vars: dict[str, tk.StringVar] = {}
         self.atk_vars: dict[str, tk.BooleanVar] = {}
-        self.demo_vars: dict[str, tk.BooleanVar] = {}
         self.custom_prompt_var = tk.StringVar()
         self.llm_listbox: tk.Listbox
         self._model_combo: ttk.Combobox
@@ -106,15 +105,6 @@ class ConfigPage:
         for cat in get_llm_categories():
             var = tk.BooleanVar(value=True)
             self.atk_vars[cat] = var
-            ttk.Checkbutton(atk_frame, text=cat, variable=var).pack(anchor="w", padx=10, pady=1)
-
-        ttk.Separator(atk_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=8)
-        ttk.Label(atk_frame, text="Demo scripts (no LLM required - MCP-based):", font=("TkDefaultFont", 9, "bold")).pack(anchor="w")
-
-        for demo in DEMO_SCRIPTS:
-            cat = demo["category"]
-            var = tk.BooleanVar(value=True)
-            self.demo_vars[cat] = var
             ttk.Checkbutton(atk_frame, text=cat, variable=var).pack(anchor="w", padx=10, pady=1)
 
         ttk.Separator(atk_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=8)

@@ -1,7 +1,7 @@
 """
 attack_runner.py
 ----------------
-Execution layer for LLM attack tests and demo scripts.
+Execution layer for LLM attack tests and real MCP tool test suites.
 
 Test definitions live in `attack_definitions.py` so the catalog is isolated from
 the runtime logic.
@@ -12,16 +12,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import subprocess
-import sys
+import shlex
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable
 
 from attack_definitions import (
-    DEMO_SCRIPTS,
     LLM_ATTACK_TESTS,
-    get_demo_categories,
     get_llm_categories,
 )
 
@@ -71,57 +68,65 @@ def _load_mcp_test_cases(tests_file: str) -> tuple[list[dict], str | None]:
     resolved = _resolve_path(tests_file)
     if not os.path.exists(resolved):
         return [], f"Test file not found: {resolved}"
+    try:
+        with open(resolved, "r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], f"Invalid tests file: {exc}"
 
-MCP_DIR = os.path.dirname(os.path.abspath(__file__))
-DEMOS_DIR = os.path.join(MCP_DIR, "demos")
+    tests_obj = payload.get("tests") if isinstance(payload, dict) else payload
+    if not isinstance(tests_obj, list):
+        return [], "Tests file must contain a 'tests' array (or be a top-level array)."
 
-DEMO_SCRIPTS: list[dict] = [
-    {
-        "category": "Tool Misuse Demo",
-        "name": "demos/03_tool_misuse/demo.py",
-        "script": os.path.join(DEMOS_DIR, "03_tool_misuse", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Memory Attacks Demo",
-        "name": "demos/04_memory_attacks/demo.py",
-        "script": os.path.join(DEMOS_DIR, "04_memory_attacks", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Supply Chain Demo",
-        "name": "demos/05_supply_chain/demo.py",
-        "script": os.path.join(DEMOS_DIR, "05_supply_chain", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Cybersecurity Tools Demo",
-        "name": "demos/06_cybersecurity_tools/demo.py",
-        "script": os.path.join(DEMOS_DIR, "06_cybersecurity_tools", "demo.py"),
-        "timeout": 90,
-    },
-    {
-        "category": "LLM Pen Testing Demo",
-        "name": "demos/07_llm_pentest/demo.py",
-        "script": os.path.join(DEMOS_DIR, "07_llm_pentest", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Code Refactoring Demo",
-        "name": "demos/08_code_refactoring/demo.py",
-        "script": os.path.join(DEMOS_DIR, "08_code_refactoring", "demo.py"),
-        "timeout": 60,
-    },
-]
+    tests: list[dict] = []
+    for idx, test in enumerate(tests_obj, start=1):
+        if not isinstance(test, dict):
+            return [], f"Invalid test at index {idx}: expected object."
+
+        name = str(test.get("name", f"test_{idx}")).strip() or f"test_{idx}"
+        tool = str(test.get("tool", "")).strip()
+        params = test.get("params", {})
+        if not tool:
+            return [], f"Invalid test '{name}': missing 'tool'."
+        if not isinstance(params, dict):
+            return [], f"Invalid test '{name}': 'params' must be an object."
+
+        normalized = dict(test)
+        normalized["name"] = name
+        normalized["tool"] = tool
+        normalized["params"] = params
+        tests.append(normalized)
+
+    if not tests:
+        return [], "No tests found in tests file."
+    return tests, None
+
+
+def _parse_server_command(entry: dict) -> tuple[str | None, list[str], str | None]:
+    """Resolve command + args for launching an MCP server over stdio."""
+    command = str(entry.get("command", "")).strip()
+    args_raw = str(entry.get("args", "")).strip()
+
+    # Backward compatibility for older saved entries that used "script".
+    script = str(entry.get("script", "")).strip()
+    if not command and script:
+        resolved_script = _resolve_path(script)
+        return "python", [resolved_script], None
+
+    if not command:
+        return None, [], "Missing server command."
+
+    args = shlex.split(args_raw, posix=False) if args_raw else []
+    return command, args, None
 
 
 def count_custom_entry_steps(entry: dict) -> int:
     """Return the number of result rows expected for a custom MCP entry."""
     tests_file = str(entry.get("tests_file", "")).strip()
     if not tests_file:
-        return 1
+        return 0
     tests, error = _load_mcp_test_cases(tests_file)
-    return len(tests) if not error else 1
+    return len(tests) if not error else 0
 
 
 async def run_llm_test(
@@ -252,28 +257,41 @@ async def run_llm_tests(
 
 async def run_mcp_test_suite(entry: dict) -> list[AttackResult]:
     """
-    Run a declarative MCP test suite against a custom MCP server script.
+    Run a declarative MCP test suite against a real MCP server command.
     Each test case calls one tool and evaluates the response with substring markers.
     """
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
-    server_script = _resolve_path(str(entry.get("script", "")).strip())
     tests_file = str(entry.get("tests_file", "")).strip()
-    category = str(entry.get("category", "Custom MCP Tests")).strip() or "Custom MCP Tests"
-    suite_name = str(entry.get("name", os.path.basename(server_script) or "MCP Suite")).strip()
+    category = str(entry.get("category", "MCP Tool Tests")).strip() or "MCP Tool Tests"
+    suite_name = str(entry.get("name", "MCP Suite")).strip() or "MCP Suite"
     timeout = int(entry.get("timeout", 60))
 
-    if not os.path.exists(server_script):
+    command, args, command_error = _parse_server_command(entry)
+    if command_error or not command:
         return [
             AttackResult(
                 llm_name="N/A",
                 attack_category=category,
                 test_name=suite_name,
-                prompt=f"python {server_script}",
+                prompt="",
                 response="",
                 verdict="ERROR",
-                details=f"Server script not found: {server_script}",
+                details=command_error or "Invalid server command.",
+            )
+        ]
+
+    if not tests_file:
+        return [
+            AttackResult(
+                llm_name="N/A",
+                attack_category=category,
+                test_name=suite_name,
+                prompt=command,
+                response="",
+                verdict="ERROR",
+                details="Missing tests JSON file.",
             )
         ]
 
@@ -293,8 +311,8 @@ async def run_mcp_test_suite(entry: dict) -> list[AttackResult]:
 
     results: list[AttackResult] = []
     server_params = StdioServerParameters(
-        command=sys.executable,
-        args=[server_script],
+        command=command,
+        args=args,
     )
 
     try:
@@ -340,7 +358,7 @@ async def run_mcp_test_suite(entry: dict) -> list[AttackResult]:
                 llm_name="N/A",
                 attack_category=category,
                 test_name=suite_name,
-                prompt=f"python {os.path.basename(server_script)}",
+                prompt=f"{command} {' '.join(args)}".strip(),
                 response="",
                 verdict="ERROR",
                 details=f"Suite timed out after {timeout}s.",
@@ -352,7 +370,7 @@ async def run_mcp_test_suite(entry: dict) -> list[AttackResult]:
                 llm_name="N/A",
                 attack_category=category,
                 test_name=suite_name,
-                prompt=f"python {os.path.basename(server_script)}",
+                prompt=f"{command} {' '.join(args)}".strip(),
                 response="",
                 verdict="ERROR",
                 details=str(exc),
@@ -360,68 +378,6 @@ async def run_mcp_test_suite(entry: dict) -> list[AttackResult]:
         ]
 
     return results
-
-
-def run_demo_script(demo: dict) -> AttackResult:
-    """
-    Run an existing demo script as a subprocess and capture its output.
-    Returns a single AttackResult with verdict DEMO and the full output.
-    """
-    script = demo["script"]
-    if not os.path.exists(script):
-        return AttackResult(
-            llm_name="N/A",
-            attack_category=demo["category"],
-            test_name=demo["name"],
-            prompt=f"python {script}",
-            response="",
-            verdict="ERROR",
-            details=f"Script not found: {script}",
-        )
-
-    try:
-        proc = subprocess.run(
-            [sys.executable, script],
-            capture_output=True,
-            text=True,
-            timeout=demo.get("timeout", 60),
-            cwd=os.path.dirname(script),
-        )
-        output = proc.stdout + ("\n[STDERR]\n" + proc.stderr if proc.stderr.strip() else "")
-        verdict = "DEMO"
-        if proc.returncode != 0:
-            verdict = "ERROR"
-            output += f"\n[Exit code: {proc.returncode}]"
-
-        return AttackResult(
-            llm_name="N/A",
-            attack_category=demo["category"],
-            test_name=demo["name"],
-            prompt=f"python {os.path.basename(script)}",
-            response=output,
-            verdict=verdict,
-            details="Demo script output captured from subprocess.",
-        )
-    except subprocess.TimeoutExpired:
-        return AttackResult(
-            llm_name="N/A",
-            attack_category=demo["category"],
-            test_name=demo["name"],
-            prompt=f"python {os.path.basename(script)}",
-            response="",
-            verdict="ERROR",
-            details=f"Script timed out after {demo.get('timeout', 60)}s.",
-        )
-    except Exception as exc:
-        return AttackResult(
-            llm_name="N/A",
-            attack_category=demo["category"],
-            test_name=demo["name"],
-            prompt=f"python {os.path.basename(script)}",
-            response="",
-            verdict="ERROR",
-            details=str(exc),
-        )
 
 
 async def _cli_demo() -> None:
@@ -446,13 +402,6 @@ async def _cli_demo() -> None:
         print(f"{marker} [{result.attack_category}] {result.test_name}: {result.verdict}")
         if result.response:
             print(f"   Response: {result.response[:100]}")
-
-    print("\n--- Demo Scripts ---")
-    for demo in DEMO_SCRIPTS:
-        print(f"\nRunning: {demo['name']}")
-        result = run_demo_script(demo)
-        print(f"  Verdict: {result.verdict}")
-        print(f"  Output (first 200 chars): {result.response[:200]}")
 
 
 if __name__ == "__main__":

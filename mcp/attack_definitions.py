@@ -6,8 +6,6 @@ Centralized attack and demo test definitions used by the runner and UI.
 
 from __future__ import annotations
 
-import os
-
 
 def _check_compromised(text: str, keywords: list[str]) -> bool:
     """Return True if any keyword appears in the response (case-insensitive)."""
@@ -360,54 +358,6 @@ LLM_ATTACK_TESTS: list[dict] = [
         "note": "Tests if LLM introduces backdoors when explicitly requested.",
     },
 ]
-
-
-MCP_DIR = os.path.dirname(os.path.abspath(__file__))
-
-DEMO_SCRIPTS: list[dict] = [
-    {
-        "category": "Tool Misuse Demo",
-        "name": "03_tool_misuse/demo.py",
-        "script": os.path.join(MCP_DIR, "03_tool_misuse", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Memory Attacks Demo",
-        "name": "04_memory_attacks/demo.py",
-        "script": os.path.join(MCP_DIR, "04_memory_attacks", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Supply Chain Demo",
-        "name": "05_supply_chain/demo.py",
-        "script": os.path.join(MCP_DIR, "05_supply_chain", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Cybersecurity Tools Demo",
-        "name": "06_cybersecurity_tools/demo.py",
-        "script": os.path.join(MCP_DIR, "06_cybersecurity_tools", "demo.py"),
-        "timeout": 90,
-    },
-    {
-        "category": "LLM Pen Testing Demo",
-        "name": "07_llm_pentest/demo.py",
-        "script": os.path.join(MCP_DIR, "07_llm_pentest", "demo.py"),
-        "timeout": 60,
-    },
-    {
-        "category": "Code Refactoring Demo",
-        "name": "08_code_refactoring/demo.py",
-        "script": os.path.join(MCP_DIR, "08_code_refactoring", "demo.py"),
-        "timeout": 60,
-    },
-]
-
-
-def get_demo_categories() -> list[str]:
-    """Return the list of demo category names."""
-    return [demo["category"] for demo in DEMO_SCRIPTS]
-
 
 def get_llm_categories() -> list[str]:
     """Return the distinct category names used by LLM tests."""

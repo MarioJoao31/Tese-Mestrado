@@ -40,7 +40,6 @@ class ResultsPage:
         self.tree.tag_configure("safe", background="#d4edda")
         self.tree.tag_configure("vulnerable", background="#f8d7da")
         self.tree.tag_configure("error", background="#fff3cd")
-        self.tree.tag_configure("demo", background="#e2d9f3")
 
         detail_lf = ttk.LabelFrame(self._parent, text="Detail", padding=4)
         detail_lf.grid(row=2, column=0, columnspan=2, sticky="ew", padx=2, pady=4)

@@ -10,7 +10,7 @@ from tkinter import filedialog, messagebox, ttk
 
 import httpx
 
-from attack_runner import AttackResult, DEMO_SCRIPTS, LLMConfig
+from attack_runner import AttackResult, LLMConfig
 from ui.intro import play_startup_intro
 from ui.pages.analyzer_page import AnalyzerPage
 from ui.pages.config_page import ConfigPage
@@ -113,43 +113,43 @@ class SecurityTestApp:
             on_sort_findings=self._sort_analyzer_tree,
         )
 
-    def _active_demo_scripts(self) -> list[dict]:
-        selected_categories = {c for c, v in self.config_page.demo_vars.items() if v.get()}
-        selected_default_demos = [d for d in DEMO_SCRIPTS if d["category"] in selected_categories]
-
-        custom_demos: list[dict] = []
+    def _active_mcp_suites(self) -> list[dict]:
+        selected_entries: list[dict] = []
         for entry in self.custom_mcp_servers:
             if not bool(entry.get("enabled", True)):
                 continue
             category = str(entry.get("server_name", "Custom MCP")).strip()
-            tool_name = str(entry.get("tool_name", "security_suite")).strip()
-            script = str(entry.get("script", "")).strip()
+            tool_name = str(entry.get("tool_name", "tool_suite")).strip()
+            command = str(entry.get("command", "")).strip()
+            args = str(entry.get("args", "")).strip()
             tests_file = str(entry.get("tests_file", "")).strip()
             timeout = int(entry.get("timeout", 60))
-            if not script:
+            if not command or not tests_file:
                 continue
-            custom_demos.append(
+            selected_entries.append(
                 {
                     "category": f"{category} (custom)",
                     "name": tool_name,
-                    "script": script,
+                    "command": command,
+                    "args": args,
                     "tests_file": tests_file,
                     "timeout": timeout,
                 }
             )
 
-        return selected_default_demos + custom_demos
+        return selected_entries
 
     def _add_mcp_server(self) -> None:
         server_name = self.mcp_servers_page.server_vars["server_name"].get().strip()
         tool_name = self.mcp_servers_page.server_vars["tool_name"].get().strip()
-        script = self.mcp_servers_page.server_vars["script"].get().strip()
+        command = self.mcp_servers_page.server_vars["command"].get().strip()
+        args = self.mcp_servers_page.server_vars["args"].get().strip()
         tests_file = self.mcp_servers_page.server_vars["tests_file"].get().strip()
         timeout_raw = self.mcp_servers_page.server_vars["timeout"].get().strip()
         enabled_raw = self.mcp_servers_page.server_vars["enabled"].get().strip().lower()
 
-        if not server_name or not tool_name or not script:
-            messagebox.showwarning("Validation Error", "Server name, suite name and script path are required.")
+        if not server_name or not tool_name or not command or not tests_file:
+            messagebox.showwarning("Validation Error", "Server, suite, command and tests file are required.")
             return
 
         try:
@@ -162,15 +162,15 @@ class SecurityTestApp:
         entry: dict[str, str | int | bool] = {
             "server_name": server_name,
             "tool_name": tool_name,
-            "script": script,
+            "command": command,
+            "args": args,
             "tests_file": tests_file,
             "timeout": timeout,
             "enabled": enabled,
         }
         self.custom_mcp_servers.append(entry)
         status = "enabled" if enabled else "disabled"
-        mode = "tests" if tests_file else "demo"
-        self.mcp_servers_page.server_listbox.insert(tk.END, f"{server_name} :: {tool_name} [{mode}, {status}]")
+        self.mcp_servers_page.server_listbox.insert(tk.END, f"{server_name} :: {tool_name} [tests, {status}]")
         self._save_configs()
 
     def _update_mcp_server(self) -> None:
@@ -181,13 +181,14 @@ class SecurityTestApp:
 
         server_name = self.mcp_servers_page.server_vars["server_name"].get().strip()
         tool_name = self.mcp_servers_page.server_vars["tool_name"].get().strip()
-        script = self.mcp_servers_page.server_vars["script"].get().strip()
+        command = self.mcp_servers_page.server_vars["command"].get().strip()
+        args = self.mcp_servers_page.server_vars["args"].get().strip()
         tests_file = self.mcp_servers_page.server_vars["tests_file"].get().strip()
         timeout_raw = self.mcp_servers_page.server_vars["timeout"].get().strip()
         enabled_raw = self.mcp_servers_page.server_vars["enabled"].get().strip().lower()
 
-        if not server_name or not tool_name or not script:
-            messagebox.showwarning("Validation Error", "Server name, suite name and script path are required.")
+        if not server_name or not tool_name or not command or not tests_file:
+            messagebox.showwarning("Validation Error", "Server, suite, command and tests file are required.")
             return
         try:
             timeout = max(1, int(timeout_raw))
@@ -199,7 +200,8 @@ class SecurityTestApp:
         entry: dict[str, str | int | bool] = {
             "server_name": server_name,
             "tool_name": tool_name,
-            "script": script,
+            "command": command,
+            "args": args,
             "tests_file": tests_file,
             "timeout": timeout,
             "enabled": enabled,
@@ -207,9 +209,8 @@ class SecurityTestApp:
         self.custom_mcp_servers[idx] = entry
 
         status = "enabled" if enabled else "disabled"
-        mode = "tests" if tests_file else "demo"
         self.mcp_servers_page.server_listbox.delete(idx)
-        self.mcp_servers_page.server_listbox.insert(idx, f"{server_name} :: {tool_name} [{mode}, {status}]")
+        self.mcp_servers_page.server_listbox.insert(idx, f"{server_name} :: {tool_name} [tests, {status}]")
         self.mcp_servers_page.server_listbox.selection_set(idx)
         self._save_configs()
 
@@ -229,7 +230,8 @@ class SecurityTestApp:
         entry = self.custom_mcp_servers[sel[0]]
         self.mcp_servers_page.server_vars["server_name"].set(str(entry.get("server_name", "")))
         self.mcp_servers_page.server_vars["tool_name"].set(str(entry.get("tool_name", "")))
-        self.mcp_servers_page.server_vars["script"].set(str(entry.get("script", "")))
+        self.mcp_servers_page.server_vars["command"].set(str(entry.get("command", "")))
+        self.mcp_servers_page.server_vars["args"].set(str(entry.get("args", "")))
         self.mcp_servers_page.server_vars["tests_file"].set(str(entry.get("tests_file", "")))
         self.mcp_servers_page.server_vars["timeout"].set(str(entry.get("timeout", 60)))
         self.mcp_servers_page.server_vars["enabled"].set("true" if bool(entry.get("enabled", True)) else "false")
@@ -345,15 +347,14 @@ class SecurityTestApp:
         self.analyzer_page.set_llm_options(labels)
 
     def _start_tests(self) -> None:
-        if not self.llm_configs and not any(v.get() for v in self.config_page.demo_vars.values()):
-            messagebox.showwarning("Nothing to run", "Add at least one LLM endpoint or enable a demo script.")
+        selected_mcp_suites = self._active_mcp_suites()
+        if not self.llm_configs and not selected_mcp_suites:
+            messagebox.showwarning("Nothing to run", "Add at least one LLM endpoint or one enabled MCP suite.")
             return
 
         selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
-        selected_demos = self._active_demo_scripts()
-
-        if self.llm_configs and not selected_llm_cats and not selected_demos:
-            messagebox.showwarning("Nothing selected", "Select at least one attack category to run.")
+        if self.llm_configs and not selected_llm_cats and not selected_mcp_suites:
+            messagebox.showwarning("Nothing selected", "Select at least one attack category or enabled MCP suite.")
             return
 
         self.is_running = True
@@ -368,7 +369,7 @@ class SecurityTestApp:
 
         thread = threading.Thread(
             target=self._run_tests_thread,
-            args=(list(self.llm_configs), selected_llm_cats, selected_demos),
+            args=(list(self.llm_configs), selected_llm_cats, selected_mcp_suites),
             daemon=True,
         )
         thread.start()
@@ -382,12 +383,12 @@ class SecurityTestApp:
         self,
         llm_configs: list[LLMConfig],
         selected_llm_cats: list[str],
-        selected_demos: list[dict],
+        selected_mcp_suites: list[dict],
     ) -> None:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(self._async_run_all(llm_configs, selected_llm_cats, selected_demos))
+            loop.run_until_complete(self._async_run_all(llm_configs, selected_llm_cats, selected_mcp_suites))
         finally:
             loop.close()
             self.root.after(0, self._on_tests_complete)
@@ -396,12 +397,12 @@ class SecurityTestApp:
         self,
         llm_configs: list[LLMConfig],
         selected_llm_cats: list[str],
-        selected_demos: list[dict],
+        selected_mcp_suites: list[dict],
     ) -> None:
         await TestRunnerService.run_all(
             llm_configs=llm_configs,
             selected_llm_cats=selected_llm_cats,
-            selected_demos=selected_demos,
+            selected_mcp_entries=selected_mcp_suites,
             stop_requested=self._stop_flag.is_set,
             on_llm_header=self._on_llm_header,
             on_llm_test_start=self._on_llm_test_start,
@@ -424,9 +425,8 @@ class SecurityTestApp:
         self._log_ui(f"  [{result.verdict:>10}]  {test['name']}\n             {preview}\n", tag)
 
     def _on_demo_start(self, demo: dict) -> None:
-        label = "MCP Test Suite" if str(demo.get("tests_file", "")).strip() else "Demo"
-        self._log_ui(f"\n{'-' * 60}\n  {label}: {demo['category']}\n{'-' * 60}\n", "demo")
-        self._update_status(f"Running {label.lower()}: {demo['name']}...")
+        self._log_ui(f"\n{'-' * 60}\n  MCP Test Suite: {demo['category']}\n{'-' * 60}\n", "demo")
+        self._update_status(f"Running MCP suite: {demo['name']}...")
 
     def _on_demo_done(self, result: AttackResult, demo: dict) -> None:
         self.results.append(result)
@@ -475,7 +475,7 @@ class SecurityTestApp:
             self.results_page.tree.delete(item)
 
         for result in self.results:
-            tag = result.verdict.lower() if result.verdict in ("SAFE", "VULNERABLE", "ERROR", "DEMO") else ""
+            tag = result.verdict.lower() if result.verdict in ("SAFE", "VULNERABLE", "ERROR") else ""
             preview = result.response[:120].replace("\n", " ") if result.response else result.details[:120]
             self.results_page.tree.insert(
                 "",
@@ -762,12 +762,6 @@ class SecurityTestApp:
             for category, var in self.config_page.atk_vars.items():
                 var.set(category in selected_set)
 
-        selected_demos = persisted.get("selected_demo_categories")
-        if isinstance(selected_demos, list):
-            selected_set = {str(x) for x in selected_demos}
-            for category, var in self.config_page.demo_vars.items():
-                var.set(category in selected_set)
-
         custom_prompt = persisted.get("custom_prompt")
         if isinstance(custom_prompt, str) and custom_prompt.strip():
             self.config_page.custom_prompt_var.set(custom_prompt)
@@ -777,34 +771,46 @@ class SecurityTestApp:
             for item in custom_servers:
                 if not isinstance(item, dict):
                     continue
-                script = str(item.get("script", "")).strip()
-                if not script:
+
+                # Backward compatibility: older entries stored Python script paths.
+                command = str(item.get("command", "")).strip()
+                args = str(item.get("args", "")).strip()
+                legacy_script = str(item.get("script", "")).strip()
+                if not command and legacy_script:
+                    command = "python"
+                    args = legacy_script
+
+                if not command:
                     continue
                 entry: dict[str, str | int | bool] = {
                     "server_name": str(item.get("server_name", "Custom MCP Server")).strip() or "Custom MCP Server",
-                    "tool_name": str(item.get("tool_name", "security_suite")).strip() or "security_suite",
-                    "script": script,
+                    "tool_name": str(item.get("tool_name", "tool_suite")).strip() or "tool_suite",
+                    "command": command,
+                    "args": args,
                     "tests_file": str(item.get("tests_file", "")).strip(),
                     "timeout": int(item.get("timeout", 60)),
                     "enabled": bool(item.get("enabled", True)),
                 }
                 self.custom_mcp_servers.append(entry)
                 status = "enabled" if bool(entry["enabled"]) else "disabled"
-                mode = "tests" if str(entry.get("tests_file", "")).strip() else "demo"
                 self.mcp_servers_page.server_listbox.insert(
                     tk.END,
-                    f"{entry['server_name']} :: {entry['tool_name']} [{mode}, {status}]",
+                    f"{entry['server_name']} :: {entry['tool_name']} [tests, {status}]",
                 )
         self._refresh_analyzer_llm_options()
 
     def _save_configs(self) -> None:
         selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
-        selected_demo_cats = [c for c, v in self.config_page.demo_vars.items() if v.get()]
+        selected_mcp_entries = [
+            str(entry.get("tool_name", "")).strip()
+            for entry in self.custom_mcp_servers
+            if bool(entry.get("enabled", True)) and str(entry.get("tool_name", "")).strip()
+        ]
         try:
             self._db.save_configs(
                 llm_configs=self.llm_configs,
                 selected_attack_categories=selected_llm_cats,
-                selected_demo_categories=selected_demo_cats,
+                selected_mcp_entries=selected_mcp_entries,
                 custom_prompt=self.config_page.custom_prompt_var.get().strip(),
                 custom_mcp_servers=self.custom_mcp_servers,
             )
@@ -813,13 +819,17 @@ class SecurityTestApp:
 
     def _save_test_run_record(self) -> None:
         selected_llm_cats = [c for c, v in self.config_page.atk_vars.items() if v.get()]
-        selected_demo_cats = [c for c, v in self.config_page.demo_vars.items() if v.get()]
+        selected_mcp_entries = [
+            str(entry.get("tool_name", "")).strip()
+            for entry in self.custom_mcp_servers
+            if bool(entry.get("enabled", True)) and str(entry.get("tool_name", "")).strip()
+        ]
         try:
             self._db.append_test_run(
                 run_started_at=self._run_started_at or datetime.now().isoformat(),
                 llm_configs=self.llm_configs,
                 selected_attack_categories=selected_llm_cats,
-                selected_demo_categories=selected_demo_cats,
+                selected_mcp_entries=selected_mcp_entries,
                 results=self.results,
             )
         except OSError:
